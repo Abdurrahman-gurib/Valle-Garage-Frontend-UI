@@ -18,7 +18,7 @@ export default function App(){
   return <Routes>
     <Route path="/login" element={<Login/>}/>
     <Route path="/" element={<Protected><AppLayout/></Protected>}>
-      <Route index element={<Navigate to="/dashboard" replace/>}/>
+      <Route index element={<Navigate to="/login" replace/>}/>
       <Route path="dashboard" element={<Dashboard/>}/>
       <Route path="vehicles" element={<Vehicles/>}/>
       <Route path="assessments" element={<Assessments/>}/>
