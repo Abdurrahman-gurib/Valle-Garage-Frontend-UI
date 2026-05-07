@@ -1,80 +1,11 @@
-import { useState } from "react";
-import { GarageOpForm } from "../components/Forms.jsx";
-import { Badge, Card, Modal, PageHeader, Table } from "../components/UI.jsx";
-import { useApp } from "../context/AppContext.jsx";
-export default function Garage() {
-  const { garageOps } = useApp();
-  const [modal, setModal] = useState(null);
-  return (
-    <div className="page">
-      <PageHeader
-        title="Garage Work"
-        subtitle="Record repair, maintenance and servicing after assessments are opened."
-        action={() => setModal({ type: "new" })}
-        actionLabel="Start Process"
-      />
-      <Table
-        headers={[
-          "Process",
-          "Vehicle",
-          "Assessment",
-          "Type",
-          "Mechanic",
-          "Labor",
-          "Status",
-          "Action",
-        ]}
-      >
-        {garageOps.map((g) => (
-          <tr key={g.id}>
-            <td>
-              <b>{g.id}</b>
-            </td>
-            <td>{g.vehicle}</td>
-            <td>{g.assessmentId}</td>
-            <td>{g.type}</td>
-            <td>{g.mechanic}</td>
-            <td>{g.labor}</td>
-            <td>
-              <Badge tone={g.status === "Completed" ? "success" : "warning"}>
-                {g.status}
-              </Badge>
-            </td>
-            <td>
-              <button
-                className="open-btn"
-                onClick={() => setModal({ type: "view", item: g })}
-              >
-                Open
-              </button>
-            </td>
-          </tr>
-        ))}
-      </Table>
-      {modal?.type === "new" && (
-        <Modal title="Start Garage Process" onClose={() => setModal(null)} wide>
-          <GarageOpForm onDone={() => setModal(null)} />
-        </Modal>
-      )}
-      {modal?.type === "view" && (
-        <Modal
-          title={`${modal.item.id} Details`}
-          onClose={() => setModal(null)}
-        >
-          <p>
-            <b>Vehicle:</b> {modal.item.vehicle}
-          </p>
-          <p>
-            <b>Work done:</b> {modal.item.workDone}
-          </p>
-          <p>
-            <b>Parts used:</b>{" "}
-            {modal.item.partsUsed
-              .map((p) => `${p.name} x${p.qty}`)
-              .join(", ") || "None"}
-          </p>
-        </Modal>
-      )}
-    </div>
-  );
-}
+import { useState } from 'react';
+import { GarageOpForm } from '../components/Forms.jsx';
+import { Badge, Button, Field, Input, Modal, PageHeader, Select, Table, TextArea } from '../components/UI.jsx';
+import { useApp } from '../context/AppContext.jsx';
+export default function Garage(){ const { garageOps, transactions }=useApp(); const [modal,setModal]=useState(null); const buildRequests=transactions.filter(t=>['External Vehicle Order','Repair / Service Billing'].includes(t.type) && ['Pending','In Progress','Build in Progress'].includes(t.status)); return <div className="page"><PageHeader title="Garage Work" subtitle="Record repair, maintenance, servicing and build requests from admin purchase orders." action={()=>setModal({type:'new'})} actionLabel="Start Process"/>
+ {buildRequests.length>0 && <CardList title="Admin Requests / PO Tickets" items={buildRequests} onOpen={(t)=>setModal({type:'fromTx', item:t})}/>}<Table headers={['Process','Vehicle','Assessment/PO','Type','Mechanic','Check-in','Expected','Status','Action']}>{garageOps.map(g=><tr key={g.id}><td><b>{g.id}</b></td><td>{g.vehicle}</td><td>{g.assessmentId || g.transactionId || '-'}</td><td>{g.type}</td><td>{g.mechanic}</td><td>{g.checkInDateTime?.replace('T',' ') || '-'}</td><td>{g.expectedDeliveryDate || '-'}</td><td><Badge tone={g.status==='Completed'||g.status==='Delivered'?'success':'warning'}>{g.status}</Badge></td><td><button className="open-btn" onClick={()=>setModal({type:'view', item:g})}>Open</button></td></tr>)}</Table>
+ {modal?.type==='new'&&<Modal title="Start Garage Process" onClose={()=>setModal(null)} wide><GarageOpForm onDone={()=>setModal(null)}/></Modal>}
+ {modal?.type==='fromTx'&&<Modal title={`Start Work from ${modal.item.id}`} onClose={()=>setModal(null)} wide><GarageOpForm transaction={modal.item} onDone={()=>setModal(null)}/></Modal>}
+ {modal?.type==='view'&&<Modal title={`${modal.item.id} Details`} onClose={()=>setModal(null)} wide><GarageDetail op={modal.item} onClose={()=>setModal(null)}/></Modal>}</div> }
+function CardList({title,items,onOpen}){return <div className="section-small"><h2>{title}</h2><div className="card-grid">{items.map(t=><div className="card" key={t.id}><div className="card-head"><h3>{t.id}</h3><Badge tone="warning">{t.status}</Badge></div><p><b>PO:</b> {t.poNumber}</p><p><b>Item:</b> {t.item}</p><p><b>Expected:</b> {t.expectedDeliveryDate || 'TBD'}</p><button className="open-btn" onClick={()=>onOpen(t)}>Start / Update Ticket</button></div>)}</div></div>}
+function GarageDetail({op,onClose}){ const { updateGarageOp }=useApp(); const [form,setForm]=useState({...op}); function file(e){ setForm({...form, invoiceFile:e.target.files?.[0]?.name || ''}); } function save(){ updateGarageOp(op.id, form); onClose(); } return <div><div className="detail-grid"><div><p><b>Vehicle:</b> {op.vehicle}</p><p><b>Assessment / PO:</b> {op.assessmentId || op.transactionId || '-'}</p><p><b>Parts used:</b> {op.partsUsed?.map(p=>`${p.name} x${p.qty}`).join(', ') || 'None'}</p></div><div><Field label="Status"><Select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>Ongoing</option><option>Build in Progress</option><option>Built and Testing</option><option>Delivered</option><option>Completed</option></Select></Field></div></div><div className="form-grid"><Field label="Expected Delivery Date"><Input type="date" value={form.expectedDeliveryDate || ''} onChange={e=>setForm({...form,expectedDeliveryDate:e.target.value})}/></Field><Field label="Labor Hours"><Input value={form.labor || ''} onChange={e=>setForm({...form,labor:e.target.value})}/></Field><Field label="Payment Status"><Select value={form.paymentStatus || 'Pending'} onChange={e=>setForm({...form,paymentStatus:e.target.value})}><option>Pending</option><option>Paid</option></Select></Field><Field label="Attach Invoice"><Input type="file" onChange={file}/>{form.invoiceFile && <small>{form.invoiceFile}</small>}</Field><Field label="Work Done"><TextArea value={form.workDone || ''} onChange={e=>setForm({...form,workDone:e.target.value})}/></Field></div><div className="button-row"><Button onClick={save}>Save Updates</Button><Button variant="secondary" onClick={()=>window.print()}>Print Job Sheet</Button></div></div>}
