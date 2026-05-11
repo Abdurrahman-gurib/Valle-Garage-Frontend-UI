@@ -203,6 +203,7 @@ function GarageDetail({ op, onClose }) {
               setForm({ ...form, paymentStatus: e.target.value })
             }
           >
+            <option>None - Internal</option>
             <option>Pending</option>
             <option>Paid</option>
           </Select>

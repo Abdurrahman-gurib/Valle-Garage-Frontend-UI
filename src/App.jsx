@@ -11,6 +11,7 @@ import Transactions from './pages/Transactions.jsx';
 import Reports from './pages/Reports.jsx';
 import Settings from './pages/Settings.jsx';
 import Notifications from './pages/Notifications.jsx';
+import NotFound from './pages/NotFound.jsx';
 
 function Protected({ children }) { const { currentUser } = useApp(); return currentUser ? children : <Navigate to="/login" replace />; }
 
@@ -29,6 +30,6 @@ export default function App(){
       <Route path="settings" element={<Settings/>}/>
       <Route path="notifications" element={<Notifications/>}/>
     </Route>
-    <Route path="*" element={<Navigate to="/login" replace/>}/>
+    <Route path="*" element={<NotFound/>}/>
   </Routes>
 }
