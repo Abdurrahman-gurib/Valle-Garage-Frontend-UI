@@ -449,3 +449,797 @@
 }
 .not-found-page{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#22003a,#170026);padding:30px;position:relative;overflow:hidden}.not-found-page:before{content:"";position:absolute;top:18%;left:-10%;width:130%;height:100px;background:repeating-linear-gradient(-45deg,#2dfc72 0 90px,#7d42ff 90px 180px);transform:rotate(-5deg);opacity:.75}.not-found-card{position:relative;z-index:1;width:min(620px,100%);background:rgba(255,255,255,.94);border-radius:32px;padding:42px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.24)}.not-found-card h1{font-size:7rem;line-height:1;margin:25px 0 0;color:#2b0046}.not-found-card h2{font-size:2rem;margin:0 0 10px;color:#ff3d72}.center{justify-content:center}.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .report-bar{display:grid;grid-template-columns:150px 1fr 40px;gap:10px;align-items:center;margin:12px 0;font-size:.9rem}.report-bar div{height:12px;background:#eee;border-radius:20px;overflow:hidden}.report-bar i{display:block;height:100%;border-radius:20px;transition:.2s}.report-bar:hover i{filter:brightness(1.08);transform:scaleY(1.15)}.big-number{font-size:2rem;color:#2b0046;display:block;margin:18px 0}
+/* Vehicle master search, history, guest drop-off and report enhancements */
+.role-pill b{display:block;color:#fff}.role-pill span{display:block;color:var(--yellow);font-size:12px;margin-top:4px}.user-chip{display:grid;gap:2px;text-align:left}.user-chip small{color:var(--muted);font-weight:700}.vehicle-search-zone{position:relative;max-width:760px}.vehicle-search-results,.inline-suggestions{background:white;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px #0002;overflow:hidden;z-index:20;margin:6px 0 18px;max-width:760px}.inline-suggestions{position:relative;margin-top:6px}.vehicle-search-results button,.inline-suggestions button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:white;text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer}.vehicle-search-results button:hover,.inline-suggestions button:hover{background:#f5f0ff}.vehicle-search-results img,.inline-suggestions img{width:66px;height:42px;object-fit:contain;background:#050505;border-radius:10px}.vehicle-search-results span,.inline-suggestions span{display:grid}.vehicle-search-results small,.inline-suggestions small{color:var(--muted)}.table-vehicle-img{width:80px;height:52px;object-fit:contain;background:#050505;border-radius:12px}.vehicle-form-preview{display:flex;gap:18px;align-items:center;background:linear-gradient(135deg,#f6fff8,#fff5f8);border:1px solid var(--line);border-radius:22px;padding:16px}.vehicle-form-preview img{width:190px;height:110px;object-fit:contain;background:#050505;border-radius:16px}.vehicle-form-preview h3{margin:0 0 6px}.vehicle-placeholder{width:190px;height:110px;border-radius:16px;background:#120029;color:var(--green);display:grid;place-items:center;font-weight:1000;font-style:italic}.vehicle-hero-card{display:flex;gap:22px;align-items:center;background:linear-gradient(135deg,#120029,#2b0048);color:white;border-radius:28px;padding:22px;margin-bottom:22px;box-shadow:0 24px 60px #2b00482b}.vehicle-hero-card img{width:min(360px,42vw);height:210px;object-fit:contain;background:#000;border-radius:20px}.vehicle-hero-card h2{font-size:34px;margin:0 0 8px;color:#fff}.vehicle-hero-card p{color:#efeaf7}.history-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0}.history-toolbar .input{max-width:240px}.vehicle-report-panel{margin-top:18px}.report-suggestions{position:relative}.guest-page{min-height:100vh;background:linear-gradient(135deg,#22003a,#10001d);padding:38px;display:grid;place-items:center}.guest-card{width:min(1050px,100%)}.guest-page .logo{margin-bottom:18px}.big-number{font-size:34px;color:var(--purple)}
+@media(max-width:800px){.vehicle-hero-card,.vehicle-form-preview{display:grid}.vehicle-hero-card img,.vehicle-form-preview img,.vehicle-placeholder{width:100%;height:180px}.history-toolbar .input{max-width:none}.guest-page{padding:18px}.role-grid{grid-template-columns:1fr!important}}
+@media print{.sidebar,.topbar,.page-header .btn,.history-toolbar,.open-btn,.btn{display:none!important}.app-shell{display:block}.page{padding:0;max-width:none}.vehicle-hero-card{background:white!important;color:#111!important;box-shadow:none;border:1px solid #ddd}.vehicle-hero-card p{color:#111!important}}
+
+/* Final workflow fixes */
+.inline-actions{display:flex;gap:8px;flex-wrap:wrap}.editable-parts span{position:relative;padding-right:34px}.part-remove{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:var(--pink);color:white;border-radius:50%;width:22px;height:22px;font-weight:1000;cursor:pointer}.part-remove:hover{background:#a80026}.vehicle-wow-card{perspective:1000px;align-items:center}.quad-3d-stage{position:relative;min-width:260px;height:170px;display:grid;place-items:center;transform-style:preserve-3d;transition:.45s ease;cursor:grab}.quad-3d-stage:hover{transform:rotateY(15deg) rotateX(4deg) scale(1.04)}.quad-3d-stage img{position:relative;z-index:2;max-width:250px;max-height:150px;object-fit:contain;filter:drop-shadow(0 22px 18px rgba(0,0,0,.35));animation:vehicleFloat 3.5s ease-in-out infinite}.quad-3d-ring{position:absolute;width:235px;height:80px;border:3px solid rgba(45,252,114,.65);border-radius:50%;transform:rotateX(68deg);box-shadow:0 0 35px rgba(45,252,114,.45);animation:ringSpin 5s linear infinite}.guest-page .card{max-width:980px}.inline-suggestions button{cursor:pointer}.inline-suggestions button:hover{background:#fff4f7}.notice{background:#fff7d6;border:1px solid #ead26a;border-radius:16px;padding:12px;color:#3b2f00}
+@keyframes vehicleFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes ringSpin{from{transform:rotateX(68deg) rotateZ(0)}to{transform:rotateX(68deg) rotateZ(360deg)}}
+
+
+/* Interactive mapped quad/buggy parts view */
+.parts-map-wrap{min-width:310px;max-width:380px}
+.parts-map-stage{position:relative;width:100%;height:220px;border-radius:24px;background:radial-gradient(circle at 50% 55%,rgba(45,252,114,.22),rgba(43,0,72,.92) 62%,#12001f 100%);display:grid;place-items:center;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 45px rgba(0,0,0,.32)}
+.parts-map-stage:before{content:"";position:absolute;inset:auto -20% 12px -20%;height:70px;border:2px solid rgba(45,252,114,.45);border-radius:50%;transform:rotateX(68deg);box-shadow:0 0 35px rgba(45,252,114,.3)}
+.parts-map-stage img{position:relative;z-index:2;max-width:88%;max-height:160px;object-fit:contain;filter:drop-shadow(0 24px 16px rgba(0,0,0,.45));transition:.35s ease}
+.parts-map-stage:hover img{transform:scale(1.04) translateY(-4px)}
+.part-hotspot{position:absolute;z-index:4;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer;padding:0}
+.hotspot-dot{width:28px;height:28px;border-radius:999px;background:var(--pink);color:white;border:3px solid white;display:grid;place-items:center;font-size:.78rem;font-weight:1000;box-shadow:0 8px 18px rgba(0,0,0,.35);animation:pulseHotspot 1.8s infinite}
+.part-hotspot:nth-of-type(even) .hotspot-dot{background:var(--green);color:#102414}
+.hotspot-card{position:absolute;left:34px;top:50%;transform:translateY(-50%) scale(.96);width:190px;background:white;color:var(--purple);border-radius:16px;padding:12px;text-align:left;box-shadow:0 18px 40px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:.2s ease;border-left:5px solid var(--pink)}
+.hotspot-card b{display:block;font-size:.9rem;margin-bottom:4px}
+.hotspot-card small{display:block;color:var(--muted);line-height:1.35}
+.part-hotspot:hover .hotspot-card,.part-hotspot:focus .hotspot-card{opacity:1;transform:translateY(-50%) scale(1)}
+.parts-map-caption{margin-top:10px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:16px;padding:12px;color:var(--purple)}
+.parts-map-caption b{display:block}
+.parts-map-caption span{display:block;color:var(--muted);font-size:.88rem;margin-top:3px}
+@keyframes pulseHotspot{0%,100%{transform:scale(1);box-shadow:0 8px 18px rgba(0,0,0,.35),0 0 0 0 rgba(255,49,95,.38)}50%{transform:scale(1.08);box-shadow:0 8px 18px rgba(0,0,0,.35),0 0 0 10px rgba(255,49,95,0)}}
+@media(max-width:800px){.parts-map-wrap{min-width:0;max-width:100%;width:100%}.parts-map-stage{height:210px}.hotspot-card{left:auto;right:34px;width:170px}}
+
+
+/* Click-to-open inspection image experience */
+.vehicle-image-open{border:0;background:radial-gradient(circle at 50% 55%,rgba(45,252,114,.16),rgba(43,0,72,.96) 65%,#12001f 100%);border-radius:26px;min-width:310px;height:220px;display:grid;place-items:center;position:relative;overflow:hidden;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 24px 45px rgba(0,0,0,.28);transition:.25s ease}
+.vehicle-image-open:before{content:"";position:absolute;inset:auto -25% 20px -25%;height:70px;border:2px solid rgba(45,252,114,.45);border-radius:50%;transform:rotateX(68deg);box-shadow:0 0 35px rgba(45,252,114,.28)}
+.vehicle-image-open img{position:relative;z-index:2;max-width:88%;max-height:165px;object-fit:contain;filter:drop-shadow(0 24px 16px rgba(0,0,0,.45));transition:.25s ease}
+.vehicle-image-open span{position:absolute;z-index:3;left:18px;bottom:16px;background:rgba(255,255,255,.92);color:var(--purple);border-radius:999px;padding:8px 13px;font-size:.82rem;font-weight:900;box-shadow:0 10px 24px rgba(0,0,0,.24)}
+.vehicle-image-open:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 30px 60px rgba(0,0,0,.35)}
+.vehicle-image-open:hover img{transform:scale(1.06)}
+.inspection-modal-grid{display:grid;grid-template-columns:minmax(320px,1.15fr) minmax(280px,.85fr);gap:22px;align-items:start}
+.inspection-map-stage{position:relative;min-height:430px;border-radius:30px;background:radial-gradient(circle at 50% 55%,rgba(45,252,114,.20),rgba(43,0,72,.96) 64%,#12001f 100%);display:grid;place-items:center;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),0 28px 70px rgba(0,0,0,.32)}
+.inspection-map-stage:before{content:"";position:absolute;inset:auto -20% 42px -20%;height:120px;border:3px solid rgba(45,252,114,.50);border-radius:50%;transform:rotateX(68deg);box-shadow:0 0 45px rgba(45,252,114,.35)}
+.inspection-map-stage img{position:relative;z-index:2;max-width:88%;max-height:310px;object-fit:contain;filter:drop-shadow(0 34px 22px rgba(0,0,0,.50))}
+.inspection-info-panel{background:#fff;border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:0 18px 44px rgba(43,0,72,.12)}
+.inspection-info-panel h3{margin:0 0 8px;color:var(--purple);font-size:1.45rem}
+.inspection-point-list{display:grid;gap:10px;margin-top:16px;max-height:430px;overflow:auto;padding-right:4px}
+.inspection-point-row{border-left:5px solid var(--pink);background:#fff8fb;border-radius:14px;padding:11px 12px}
+.inspection-point-row:nth-child(even){border-left-color:var(--green);background:#f3fff7}
+.inspection-point-row b{display:block;color:var(--purple);margin-bottom:4px}
+.inspection-point-row span{display:block;color:var(--text);font-size:.9rem;line-height:1.35}
+.inspection-point-row small{display:block;color:var(--muted);margin-top:5px;font-weight:800}
+.inspection-hotspot .hotspot-card{width:220px}
+@media(max-width:900px){.inspection-modal-grid{grid-template-columns:1fr}.inspection-map-stage{min-height:330px}.inspection-map-stage img{max-height:230px}.vehicle-image-open{width:100%;min-width:0}.inspection-hotspot .hotspot-card{width:180px}}
+
+
+/* Clean vehicle image + clearer modal inspection map */
+.clean-vehicle-hero{align-items:center}
+.normal-vehicle-photo{width:310px;min-height:210px;border-radius:24px;background:#050505;display:grid;place-items:center;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 38px rgba(43,0,72,.18)}
+.normal-vehicle-photo img{max-width:92%;max-height:180px;object-fit:contain;filter:drop-shadow(0 18px 12px rgba(0,0,0,.38))}
+.inspect-small-btn{position:absolute;right:14px;bottom:14px;border:0;border-radius:999px;background:white;color:var(--purple);font-weight:1000;padding:8px 13px;font-size:.82rem;box-shadow:0 10px 24px rgba(0,0,0,.28);cursor:pointer}
+.inspect-small-btn:hover{background:var(--green);transform:translateY(-2px)}
+.inspection-modal-grid{display:grid;grid-template-columns:1fr;gap:18px}
+.inspection-map-stage{min-height:520px;border-radius:28px;background:linear-gradient(135deg,#140020,#2b0048);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:26px}
+.inspection-map-stage:before{content:"";position:absolute;width:76%;height:130px;bottom:38px;border:3px solid rgba(45,252,114,.45);border-radius:50%;transform:rotateX(68deg);box-shadow:0 0 45px rgba(45,252,114,.34)}
+.inspection-map-stage img{position:relative;z-index:2;max-width:82%;max-height:420px;object-fit:contain;filter:drop-shadow(0 34px 24px rgba(0,0,0,.58))}
+.inspection-info-panel{background:#fff;border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 18px 44px rgba(43,0,72,.12)}
+.inspection-point-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:14px}
+.inspection-point-row{border-left:5px solid var(--pink);background:#fff8fb;border-radius:14px;padding:11px 12px}
+.inspection-point-row:nth-child(even){border-left-color:var(--green);background:#f3fff7}
+.inspection-point-row b{display:block;color:var(--purple);margin-bottom:4px}
+.inspection-point-row span{display:block;color:var(--text);font-size:.88rem;line-height:1.35}
+.inspection-point-row small{display:block;color:var(--muted);margin-top:5px;font-weight:800}
+.inspection-hotspot .hotspot-card{width:235px}
+@media(max-width:900px){.clean-vehicle-hero{display:block}.normal-vehicle-photo{width:100%;margin-bottom:16px}.inspection-map-stage{min-height:360px;padding:16px}.inspection-map-stage img{max-height:270px;max-width:92%}.inspection-point-list{grid-template-columns:1fr}.inspection-hotspot .hotspot-card{width:180px}}
+
+
+/* Final clean inspection modal fix */
+.normal-vehicle-photo{background:#050505 !important}
+.normal-vehicle-photo .inspect-small-btn{display:none !important}
+.clean-inspect-btn{position:static !important;display:inline-flex !important;align-items:center;justify-content:center;margin-top:12px;border:0;border-radius:999px;background:var(--purple);color:white;font-weight:1000;padding:10px 16px;font-size:.9rem;box-shadow:0 10px 24px rgba(43,0,72,.20);cursor:pointer}
+.clean-inspect-btn:hover{background:var(--pink);transform:translateY(-2px)}
+.inspection-map-stage{background:#050505 !important;border:1px solid rgba(255,255,255,.12) !important;box-shadow:0 24px 60px rgba(0,0,0,.28) !important}
+.inspection-map-stage:before{display:none !important}
+.inspection-map-stage img{max-width:86% !important;max-height:390px !important;filter:drop-shadow(0 24px 18px rgba(0,0,0,.45)) !important}
+.inspection-hotspot .hotspot-card{z-index:50}
+@media(max-width:900px){.clean-inspect-btn{width:fit-content}.inspection-map-stage img{max-width:94% !important;max-height:270px !important}}
+
+
+/* Tooltip overflow + green inspect button fix */
+.clean-inspect-btn{
+  background: var(--green) !important;
+  color:#072b14 !important;
+}
+.clean-inspect-btn:hover{
+  background:#21ff7a !important;
+  color:#04160b !important;
+}
+
+.inspection-map-stage{
+  overflow: visible !important;
+}
+
+.inspection-hotspot .hotspot-card{
+  left: 42px !important;
+  right: auto !important;
+  max-width: 240px;
+  z-index: 9999 !important;
+}
+
+.inspection-hotspot:nth-child(6) .hotspot-card,
+.inspection-hotspot:nth-child(7) .hotspot-card{
+  left: auto !important;
+  right: 42px !important;
+}
+
+@media(max-width:900px){
+  .inspection-hotspot .hotspot-card{
+    left:auto !important;
+    right:42px !important;
+    max-width:170px;
+  }
+}
+
+
+/* Final no-cutoff inspection map fix */
+.inspection-map-stage{
+  overflow:hidden !important;
+  padding:26px !important;
+}
+
+.inspection-map-stage img{
+  max-width:78% !important;
+  max-height:360px !important;
+}
+
+.inspection-hotspot .hotspot-card{
+  display:none !important;
+}
+
+.inspection-point-list{
+  margin-top:18px !important;
+  display:grid !important;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr)) !important;
+  gap:12px !important;
+}
+
+.inspection-point-row{
+  box-shadow:0 8px 22px rgba(43,0,72,.08);
+}
+
+.inspection-info-panel{
+  margin-top:14px !important;
+}
+
+@media(max-width:900px){
+  .inspection-map-stage img{
+    max-width:88% !important;
+    max-height:260px !important;
+  }
+}
+
+
+/* Reverted hover details, no scrollbar, safety equipment checklist */
+.modal-content,
+.modal,
+.modal-body{
+  overflow:visible !important;
+}
+
+.inspection-modal-grid{
+  overflow:visible !important;
+}
+
+.inspection-map-stage{
+  overflow:visible !important;
+  padding:26px !important;
+  margin:0 70px 20px 20px !important;
+}
+
+.inspection-map-stage img{
+  max-width:76% !important;
+  max-height:360px !important;
+}
+
+.inspection-hotspot .hotspot-card{
+  display:block !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+  position:absolute !important;
+  top:50% !important;
+  transform:translateY(-50%) scale(.96) !important;
+  width:230px !important;
+  background:#fff !important;
+  color:var(--purple) !important;
+  border-radius:16px !important;
+  padding:12px !important;
+  box-shadow:0 18px 40px rgba(0,0,0,.28) !important;
+  border-left:5px solid var(--pink) !important;
+  z-index:99999 !important;
+  white-space:normal !important;
+}
+
+.inspection-hotspot:hover .hotspot-card,
+.inspection-hotspot:focus .hotspot-card,
+.inspection-hotspot:focus-within .hotspot-card{
+  opacity:1 !important;
+  transform:translateY(-50%) scale(1) !important;
+}
+
+/* Default: card opens to the right */
+.inspection-hotspot .hotspot-card{
+  left:38px !important;
+  right:auto !important;
+}
+
+/* Right-side markers: card opens left so it never gets cut */
+.inspection-hotspot:nth-of-type(6) .hotspot-card,
+.inspection-hotspot:nth-of-type(7) .hotspot-card{
+  left:auto !important;
+  right:38px !important;
+}
+
+/* Top markers: push cards slightly down */
+.inspection-hotspot:nth-of-type(1) .hotspot-card,
+.inspection-hotspot:nth-of-type(3) .hotspot-card{
+  top:70% !important;
+}
+
+/* Bottom markers: push cards slightly up */
+.inspection-hotspot:nth-of-type(2) .hotspot-card,
+.inspection-hotspot:nth-of-type(7) .hotspot-card{
+  top:25% !important;
+}
+
+.safety-equipment-panel{
+  margin-top:18px;
+  background:linear-gradient(135deg,#fff7d6,#f6fff8);
+  border:1px solid #e7d875;
+  border-radius:24px;
+  padding:18px;
+}
+
+.safety-equipment-panel h3{
+  margin:0 0 6px;
+  color:var(--purple);
+}
+
+.safety-equipment-panel p{
+  margin:0 0 14px;
+  color:var(--muted);
+}
+
+.safety-check-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:10px;
+}
+
+.safety-check-card{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  background:white;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:12px;
+  box-shadow:0 8px 20px rgba(43,0,72,.08);
+}
+
+.safety-check-card input{
+  margin-top:3px;
+  width:18px;
+  height:18px;
+  accent-color:var(--green);
+}
+
+.safety-check-card b{
+  display:block;
+  color:var(--purple);
+  margin-bottom:3px;
+}
+
+.safety-check-card small{
+  display:block;
+  color:var(--muted);
+  line-height:1.35;
+}
+
+@media(max-width:900px){
+  .inspection-map-stage{
+    margin:0 0 16px 0 !important;
+    overflow:hidden !important;
+  }
+  .inspection-hotspot .hotspot-card{
+    display:none !important;
+  }
+  .inspection-map-stage img{
+    max-width:88% !important;
+    max-height:260px !important;
+  }
+}
+
+
+/* Fit inspection modal properly in one clean display */
+.modal-content{
+  max-height:92vh !important;
+  overflow:auto !important;
+}
+
+.inspection-modal-grid{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:14px !important;
+}
+
+.inspection-map-stage{
+  min-height:360px !important;
+  max-height:390px !important;
+  margin:0 !important;
+  padding:18px !important;
+  border-radius:26px !important;
+  overflow:visible !important;
+}
+
+.inspection-map-stage img{
+  max-height:285px !important;
+  max-width:72% !important;
+}
+
+.inspection-info-panel{
+  margin-top:0 !important;
+  padding:16px 18px !important;
+  border-radius:22px !important;
+}
+
+.inspection-info-panel h3{
+  font-size:1.35rem !important;
+  margin-bottom:6px !important;
+}
+
+.inspection-info-panel p{
+  font-size:.92rem !important;
+  margin-bottom:10px !important;
+}
+
+.inspection-point-list{
+  max-height:none !important;
+  overflow:visible !important;
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:10px !important;
+}
+
+.inspection-point-row{
+  padding:9px 11px !important;
+  border-radius:14px !important;
+}
+
+.inspection-point-row b{
+  font-size:.9rem !important;
+}
+
+.inspection-point-row span{
+  font-size:.82rem !important;
+  line-height:1.28 !important;
+}
+
+.inspection-point-row small{
+  font-size:.78rem !important;
+}
+
+.safety-equipment-panel{
+  margin-top:14px !important;
+  padding:14px 16px !important;
+  border-radius:20px !important;
+}
+
+.safety-equipment-panel h3{
+  font-size:1.15rem !important;
+}
+
+.safety-equipment-panel p{
+  font-size:.88rem !important;
+  margin-bottom:10px !important;
+}
+
+.safety-check-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:8px !important;
+}
+
+.safety-check-card{
+  padding:9px 10px !important;
+  border-radius:14px !important;
+}
+
+.safety-check-card b{
+  font-size:.84rem !important;
+}
+
+.safety-check-card small{
+  font-size:.76rem !important;
+  line-height:1.25 !important;
+}
+
+@media(max-width:900px){
+  .inspection-map-stage{
+    min-height:300px !important;
+  }
+  .inspection-map-stage img{
+    max-width:88% !important;
+    max-height:230px !important;
+  }
+  .inspection-point-list,
+  .safety-check-grid{
+    grid-template-columns:1fr !important;
+  }
+}
+
+
+/* Enable clean modal scrolling to view all inspection content */
+.modal-content{
+  max-height:90vh !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  scrollbar-width:thin;
+}
+
+.modal-content::-webkit-scrollbar{
+  width:10px;
+}
+
+.modal-content::-webkit-scrollbar-thumb{
+  background:rgba(91,255,145,.55);
+  border-radius:999px;
+}
+
+.modal-content::-webkit-scrollbar-track{
+  background:rgba(255,255,255,.08);
+}
+
+.inspection-modal-grid{
+  padding-bottom:14px !important;
+}
+
+.safety-equipment-panel{
+  margin-bottom:12px !important;
+}
+
+
+/* MINI SCROLLBAR FOR INSPECTION CONTENT */
+.inspection-info-panel{
+  max-height: 340px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 10px !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #39ff88 rgba(255,255,255,.08) !important;
+}
+
+.inspection-info-panel::-webkit-scrollbar{
+  width: 8px !important;
+}
+
+.inspection-info-panel::-webkit-scrollbar-track{
+  background: rgba(255,255,255,.08) !important;
+  border-radius: 999px !important;
+}
+
+.inspection-info-panel::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg,#39ff88,#14b866) !important;
+  border-radius: 999px !important;
+}
+
+.safety-equipment-panel{
+  margin-top: 18px !important;
+}
+
+
+
+/* WHOLE INSPECTION MODAL SCROLL FIX */
+.modal-backdrop{
+  overflow-y: auto !important;
+  align-items: flex-start !important;
+  padding-top: 24px !important;
+  padding-bottom: 24px !important;
+}
+
+.modal{
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.modal-content{
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Keep the inspection page content as one full scrollable modal */
+.inspection-modal-grid{
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: 28px !important;
+}
+
+.inspection-info-panel{
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Prevent hidden lower content in inspection modal */
+.safety-equipment-panel{
+  display: block !important;
+  margin-bottom: 32px !important;
+}
+
+
+
+/* Workflow chain final fixes */
+.checklist-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;
+}
+.check-tile{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:#fff8fb;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px 12px;
+  font-weight:800;
+  color:var(--purple);
+}
+.check-tile input{
+  width:17px;
+  height:17px;
+  accent-color:var(--green);
+}
+.inventory-picker{
+  display:grid;
+  grid-template-columns:1.8fr .7fr auto;
+  gap:12px;
+  align-items:end;
+  margin-top:14px;
+}
+.inventory-picker select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background:white;
+  color:var(--purple);
+  font-weight:800;
+}
+.part-remove-row{
+  border:0;
+  border-radius:999px;
+  background:var(--pink);
+  color:white;
+  padding:7px 10px;
+  font-weight:1000;
+  cursor:pointer;
+}
+.part-remove-row:hover{filter:brightness(.92)}
+@media(max-width:800px){
+  .inventory-picker{grid-template-columns:1fr}
+}
+
+
+/* Mechanic manual dropdown + optional VIN fix */
+.inline-fields{
+  align-items:center;
+}
+.field .input::placeholder{
+  color:#8b7a98;
+}
+
+
+/* Final UI polish: remove button, login 4 cards, guest mauve, responsive */
+.part-remove,
+.part-remove-row{
+  min-width:78px !important;
+  width:auto !important;
+  height:34px !important;
+  border:0 !important;
+  border-radius:12px !important;
+  background:var(--pink) !important;
+  color:white !important;
+  padding:6px 10px !important;
+  font-size:.78rem !important;
+  font-weight:900 !important;
+  line-height:1.1 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+  white-space:nowrap !important;
+  box-shadow:none !important;
+  position:static !important;
+  transform:none !important;
+}
+
+.editable-parts span{
+  padding-right:8px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:8px !important;
+}
+
+.table-wrap td:last-child,
+.table-wrap th:last-child{
+  min-width:110px;
+  text-align:center;
+}
+
+.role-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  align-items:stretch;
+}
+
+.role-card{
+  min-height:230px;
+}
+
+.role-card.mauve,
+.role-card.guest{
+  border-top-color:#b56cff !important;
+  outline:2px solid rgba(181,108,255,.35);
+  box-shadow:0 8px 0 rgba(181,108,255,.22), 0 18px 35px rgba(43,0,72,.10);
+}
+
+.role-card.mauve h3,
+.role-card.guest h3{
+  color:#4b007a;
+}
+
+@media(max-width:1100px){
+  .role-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
+@media(max-width:650px){
+  .login-card{
+    margin-top:220px;
+    padding:22px;
+  }
+
+  .login-card h2{
+    font-size:36px;
+  }
+
+  .role-grid{
+    grid-template-columns:1fr !important;
+  }
+
+  .role-card{
+    min-height:auto;
+  }
+}
+
+
+/* Guest card exact outline color */
+.role-card.mauve,
+.role-card.guest{
+  border-top:7px solid #2b0046 !important;
+  outline:2px solid #2b0046 !important;
+  box-shadow:0 10px 24px rgba(43,0,70,.18) !important;
+}
+
+/* Force all 4 login cards horizontal */
+.role-grid{
+  display:grid !important;
+  grid-template-columns:repeat(4, 1fr) !important;
+  gap:20px !important;
+  align-items:stretch !important;
+  width:100% !important;
+}
+
+.role-card{
+  width:100% !important;
+  min-width:0 !important;
+}
+
+@media(max-width:1200px){
+  .role-grid{
+    grid-template-columns:repeat(2, 1fr) !important;
+  }
+}
+
+@media(max-width:700px){
+  .role-grid{
+    grid-template-columns:1fr !important;
+  }
+}
+
+
+/* FORCE 4 CARDS SAME ROW */
+.login-card{
+  max-width:1400px !important;
+  width:95% !important;
+}
+
+.role-grid{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  justify-content:space-between !important;
+  align-items:stretch !important;
+  gap:18px !important;
+  width:100% !important;
+}
+
+.role-grid .role-card{
+  flex:1 1 0 !important;
+  width:24% !important;
+  min-width:0 !important;
+  max-width:none !important;
+}
+
+.role-card.guest,
+.role-card.mauve{
+  border-color:#2b0046 !important;
+  outline:2px solid #2b0046 !important;
+}
+
+@media(max-width:1100px){
+  .role-grid{
+    flex-wrap:wrap !important;
+  }
+
+  .role-grid .role-card{
+    width:48% !important;
+    flex:0 0 48% !important;
+  }
+}
+
+@media(max-width:700px){
+  .role-grid .role-card{
+    width:100% !important;
+    flex:0 0 100% !important;
+  }
+}
+
+
+/* Guest card exact purple/mauve color */
+.role-card.guest,
+.role-card.mauve{
+  border-top:7px solid #2b0046 !important;
+  border-color:#2b0046 !important;
+  outline:2px solid #2b0046 !important;
+  box-shadow:0 10px 24px rgba(43,0,70,.18) !important;
+}
+
+
+/* FORCE guest border purple */
+.role-card.guest{
+  border:3px solid #2b0046 !important;
+  border-top:7px solid #2b0046 !important;
+  outline:none !important;
+}
+
+.role-card.guest *{
+  border-color:#2b0046 !important;
+}
+
+
+/* DEFINITIVE GUEST PURPLE BORDER */
+.role-card.guest{
+  border: 4px solid #2b0046 !important;
+  border-top: 8px solid #2b0046 !important;
+  box-shadow: 0 8px 0 rgba(43,0,70,.15) !important;
+}
+
+.role-card.guest:hover{
+  border-color:#2b0046 !important;
+}
+
+
+/* FINAL guest purple override */
+.role-card.guest{
+  border:4px solid #2b0046 !important;
+  border-top:8px solid #2b0046 !important;
+  background:white !important;
+}
+
+.role-card.guest:hover{
+  border-color:#2b0046 !important;
+}
+
+/* Guest inline style fallback */
+.role-card.guest{
+  border-color:#2b0046 !important;
+  border-top-color:#2b0046 !important;
+}

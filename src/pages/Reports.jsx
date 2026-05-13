@@ -1,27 +1,25 @@
-import { Card, PageHeader } from '../components/UI.jsx';
+import { useMemo, useState } from 'react';
+import { Card, PageHeader, Button, Input, Table, Badge } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
-function exportCsv(name, rows){
-  const csv = rows.map(r=>r.map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type:'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${name}.csv`;
-  a.click();
-}
-function Bar({ label, value, max, color='#2b0046' }){
-  const pct = max ? Math.max(6, Math.round((value/max)*100)) : 6;
-  return <div className="report-bar" title={`${label}: ${value}`}><span>{label}</span><div><i style={{width:`${pct}%`, background:color}}></i></div><b>{value}</b></div>
-}
+function exportCsv(name, rows){ const csv = rows.map(r=>r.map(v=>`"${String(v ?? '').replaceAll('"','""')}"`).join(',')).join('\n'); const blob = new Blob([csv], { type:'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${name}.csv`; a.click(); }
+function Bar({ label, value, max, color='#2b0046' }){ const pct = max ? Math.max(6, Math.round((value/max)*100)) : 6; return <div className="report-bar" title={`${label}: ${value}`}><span>{label}</span><div><i style={{width:`${pct}%`, background:color}}></i></div><b>{value}</b></div> }
+
 export default function Reports(){
- const { vehicles, inventory, assessments, garageOps, transactions }=useApp();
+ const { vehicles, inventory, assessments, garageOps, transactions, vehicleCatalog, findVehicleByPlate, getVehicleHistory, exportVehicleHistory }=useApp();
+ const [search,setSearch]=useState('');
+ const [filter,setFilter]=useState({type:'all'});
  const statusCounts = vehicles.reduce((a,v)=>({...a,[v.status]:(a[v.status]||0)+1}),{});
  const assessCounts = assessments.reduce((a,v)=>({...a,[v.status]:(a[v.status]||0)+1}),{});
  const txTotal = transactions.reduce((s,t)=>s+Number(t.amount||0),0);
  const maxStatus = Math.max(1,...Object.values(statusCounts),...Object.values(assessCounts));
  const lowStock = inventory.filter(i=>Number(i.stock)<=Number(i.reorderLevel));
  const partUsage = garageOps.flatMap(g=>g.partsUsed||[]);
+ const suggestions = useMemo(()=>{ if(!search) return []; const q=search.toLowerCase(); const all=[...vehicles,...vehicleCatalog]; const seen=new Set(); return all.filter(v=>{ const plate=(v.plate||v.plateNumber||'').toUpperCase(); if(seen.has(plate)) return false; seen.add(plate); return JSON.stringify(v).toLowerCase().includes(q); }).slice(0,8); },[search,vehicles,vehicleCatalog]);
+ const selectedVehicle = findVehicleByPlate(search);
+ const history = selectedVehicle ? getVehicleHistory(selectedVehicle.plate, filter) : null;
  return <div className="page"><PageHeader title="Reports" subtitle="Live visual reports based on vehicles, assessments, garage work, inventory and transactions loaded from PostgreSQL through the backend API."/>
+  <Card className="section-small"><h2>Vehicle Garage History Report</h2><p>Search a plate number to view complete garage history, mechanics, assessments, issued parts and export the report.</p><div className="history-toolbar"><Input placeholder="Search vehicle plate / VIN / model" value={search} onChange={e=>setSearch(e.target.value.toUpperCase())}/><Button variant={filter.type==='week'?'primary':'secondary'} onClick={()=>setFilter({type:'week'})}>Week</Button><Button variant={filter.type==='month'?'primary':'secondary'} onClick={()=>setFilter({type:'month'})}>Month</Button><Button variant={filter.type==='year'?'primary':'secondary'} onClick={()=>setFilter({type:'year'})}>Year</Button><Button variant="secondary" onClick={()=>setFilter({type:'all'})}>All</Button></div>{suggestions.length>0 && <div className="vehicle-search-results report-suggestions">{suggestions.map(v=><button key={v.plate || v.plateNumber} onClick={()=>setSearch(v.plate || v.plateNumber)}><img src={v.imageUrl || '/vehicles/quad-450l.jpeg'}/><span><b>{v.plate || v.plateNumber}</b><small>{v.model || v.type || v.vehicleType}</small></span></button>)}</div>}{history?.vehicle && <div className="vehicle-report-panel"><div className="vehicle-hero-card"><img src={history.vehicle.imageUrl || '/vehicles/quad-450l.jpeg'}/><div><h2>{history.vehicle.plate} - {history.vehicle.model || history.vehicle.type}</h2><p><b>VIN:</b> {history.vehicle.vin || '-'} • <b>CC:</b> {history.vehicle.cc || '-'} • <b>Status:</b> {history.vehicle.status}</p><p><b>Visits:</b> {history.visits} • <b>Mechanics:</b> {history.mechanics.join(', ') || 'None'} • <b>Parts Qty:</b> {history.parts.reduce((s,p)=>s+Number(p.qty||1),0)}</p><Button onClick={()=>exportVehicleHistory(history.vehicle.plate, filter, 'csv')}>Export CSV</Button> <Button variant="secondary" onClick={()=>exportVehicleHistory(history.vehicle.plate, filter, 'excel')}>Export Excel</Button></div></div><Table headers={["Type","Reference","Mechanic","Status","Details"]}>{history.assessments.map(a=><tr key={a.id}><td>Assessment</td><td><b>{a.id}</b></td><td>{a.mechanic}</td><td><Badge tone={a.status==='Completed'?'success':'warning'}>{a.status}</Badge></td><td>{a.issue} / {(a.parts||[]).map(p=>`${p.name} x${p.qty}`).join(', ')}</td></tr>)}{history.garageOps.map(g=><tr key={g.id}><td>Garage Work</td><td><b>{g.id}</b></td><td>{g.mechanic}</td><td><Badge tone={g.status==='Completed'?'success':'warning'}>{g.status}</Badge></td><td>{g.workDone} / {(g.partsUsed||[]).map(p=>`${p.name} x${p.qty}`).join(', ')}</td></tr>)}</Table></div>}</Card>
   <div className="report-grid">
     <Card><h2>Vehicle Status</h2>{Object.entries(statusCounts).map(([k,v],i)=><Bar key={k} label={k} value={v} max={maxStatus} color={i%2?'#7d42ff':'#2dfc72'}/>) }<button className="open-btn" onClick={()=>exportCsv('vehicle-status', [['Status','Count'],...Object.entries(statusCounts)])}>Export CSV</button></Card>
     <Card><h2>Assessment Pipeline</h2>{Object.entries(assessCounts).map(([k,v],i)=><Bar key={k} label={k} value={v} max={maxStatus} color={i%2?'#ff3d72':'#2b0046'}/>) }<button className="open-btn" onClick={()=>exportCsv('assessments', [['Ticket','Vehicle','Status','Issue'],...assessments.map(a=>[a.id,a.vehicle,a.status,a.issue])])}>Export CSV</button></Card>

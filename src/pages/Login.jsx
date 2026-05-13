@@ -31,6 +31,15 @@ const roles = [
     email: "store@vallepark.com",
     pass: "password123",
   },
+  {
+    role: "guest",
+    title: "GUEST",
+    subtitle: "Garage Drop-off",
+    desc: "Create an emergency garage ticket when no mechanic is around.",
+    color: "guest",
+    email: "guest@vallepark.com",
+    pass: "",
+  },
 ];
 
 function EyeIcon() {
@@ -73,6 +82,10 @@ export default function Login() {
   async function submit(e) {
     e.preventDefault();
     if (!selected) return;
+    if (selected.role === "guest") {
+      navigate("/guest");
+      return;
+    }
 
     const res = await login(selected.role, email, password);
     if (res.ok) navigate("/dashboard");
@@ -244,13 +257,17 @@ export default function Login() {
                             ? "2px solid #ff3d72"
                             : r.color === "green"
                             ? "2px solid #2dfc72"
-                            : "2px solid #ffe600",
+                            : r.color === "guest"
+                            ? "2px solid #2b0046"
+                            : r.color === "guest" ? "2px solid #2b0046" : "2px solid #ffe600",
                         borderTop:
                           r.color === "pink"
                             ? "7px solid #ff3d72"
                             : r.color === "green"
                             ? "7px solid #2dfc72"
-                            : "7px solid #ffe600",
+                            : r.color === "guest"
+                            ? "7px solid #2b0046"
+                            : r.color === "guest" ? "7px solid #2b0046" : "7px solid #ffe600",
                         boxShadow: "0 10px 0 rgba(43, 0, 72, 0.12)",
                         cursor: "pointer",
                         transition: "0.25s ease",
@@ -336,7 +353,7 @@ export default function Login() {
                   </div>
                 )}
 
-                <label style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#2b0046", fontWeight: "700" }}>
+                {selected.role !== "guest" && <label style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#2b0046", fontWeight: "700" }}>
                   Email
                   <input
                     value={email}
@@ -349,9 +366,9 @@ export default function Login() {
                       outline: "none",
                     }}
                   />
-                </label>
+                </label>}
 
-                <label style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#2b0046", fontWeight: "700" }}>
+                {selected.role !== "guest" && <label style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#2b0046", fontWeight: "700" }}>
                   Password
                   <div style={{ position: "relative", width: "100%" }}>
                     <input
@@ -395,7 +412,13 @@ export default function Login() {
                       {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </button>
                   </div>
-                </label>
+                </label>}
+
+                {selected.role === "guest" && (
+                  <div style={{background:"#f4fff7", border:"1px solid #2dfc72", padding:"16px", borderRadius:"16px", color:"#2b0046", fontWeight:700}}>
+                    Continue to the guest garage drop-off form. This is for urgent vehicle drop-off when no mechanic is currently available.
+                  </div>
+                )}
 
                 <button
                   style={{
@@ -410,7 +433,7 @@ export default function Login() {
                     marginTop: "8px",
                   }}
                 >
-                  Login
+                  {selected.role === "guest" ? "Continue to Guest Drop-off" : "Login"}
                 </button>
               </form>
             )}
