@@ -1,6 +1,10 @@
+import VehicleChecklist from '../components/VehicleChecklist.jsx';
+import MultipleMechanicsSelect from '../components/MultipleMechanicsSelect.jsx';
+import PartsCostTable from '../components/PartsCostTable.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Field, Input, Select, TextArea } from './UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
+
 
 const vehicleTypeSuggestions = ['Quad', 'Buggy', 'Jeep', 'UTV', 'Motorcycle', 'Other'];
 const issueSuggestions = ['Brake issue', 'Engine vibration', 'Routine service', 'Electrical fault', 'Tyre replacement', 'Oil leak', 'Transmission noise', 'Accident damage', 'Battery issue', 'Other'];
@@ -42,9 +46,13 @@ export function VehicleForm({ onDone, transaction, initialVehicle }) {
     imageUrl: initialVehicle?.imageUrl || ''
   }));
   const [dirty, setDirty] = useState(false);
-  const [vehicleChecks, setVehicleChecks] = useState(initialVehicle?.vehicleChecks || []);
-  const [manualMechanic, setManualMechanic] = useState(initialVehicle?.manualMechanic || '');
-  function toggleVehicleCheck(item){ setVehicleChecks(prev => prev.includes(item) ? prev.filter(x=>x!==item) : [...prev,item]); }
+const [checklist, setChecklist] = useState(
+  initialVehicle?.vehicleChecks || {}
+);
+
+const [manualMechanic, setManualMechanic] = useState(
+  initialVehicle?.manualMechanic || ''
+);
   const suggestions = useMemo(() => {
     const q = norm(form.plate);
     if(!q || q.length < 1) return [];
@@ -80,7 +88,7 @@ export function VehicleForm({ onDone, transaction, initialVehicle }) {
       ...form,
       vin: form.vin || '',
       mechanic: form.mechanic === 'manual' ? manualMechanic : form.mechanic,
-      vehicleChecks
+      vehicleChecks: checklist
     };
     const saved = initialVehicle?.id
       ? await updateVehicle(initialVehicle.id, payload)
@@ -90,9 +98,37 @@ export function VehicleForm({ onDone, transaction, initialVehicle }) {
   const isExternal = form.ownership === 'External';
   return <form onSubmit={save} className="form-grid">
     <div className="vehicle-form-preview form-actions">
-      <div>{form.imageUrl ? <img src={form.imageUrl} alt={form.model || form.type}/> : <div className="vehicle-placeholder">CFMOTO</div>}</div>
-      <section><h3>{form.plate || 'Vehicle preview'}</h3><p>{form.model || form.type} {form.cc ? `• ${form.cc}` : ''}</p><small>Typing/selecting a known plate auto-fills VIN, model, CC, ownership and image from the vehicle database.</small></section>
-    </div>
+  <div>
+    <img
+      src={
+        form.imageUrl &&
+        form.imageUrl !== '-' &&
+        form.imageUrl.toLowerCase?.() !== 'null' &&
+        form.imageUrl.toLowerCase?.() !== 'undefined'
+          ? form.imageUrl
+          : '/vehicles/quad-450l.jpeg'
+      }
+      alt=""
+      onError={(e) => {
+        e.currentTarget.onerror = null;
+        e.currentTarget.src = '/vehicles/quad-450l.jpeg';
+      }}
+    />
+  </div>
+
+  <section>
+    <h3>{form.plate || 'Vehicle preview'}</h3>
+
+    <p>
+      {form.model || form.type} {form.cc ? `• ${form.cc}` : ''}
+    </p>
+
+    <small>
+      Typing/selecting a known plate auto-fills VIN, model, CC, ownership and
+      image from the vehicle database.
+    </small>
+  </section>
+</div>
     <Field label="Plate Number"><Input required placeholder="Start typing plate number" value={form.plate} onChange={e=>change('plate', e.target.value.toUpperCase())}/><SuggestBox items={suggestions} onPick={applyVehicle}/></Field>
     <Field label="VIN / Chassis No. (Optional)"><Input placeholder="Auto-filled, manual, or leave blank" value={form.vin} onChange={e=>change('vin',e.target.value)}/></Field>
     <Field label="Model"><Input placeholder="e.g. CFORCE 520L" value={form.model} onChange={e=>change('model',e.target.value)}/></Field>
@@ -107,6 +143,7 @@ export function VehicleForm({ onDone, transaction, initialVehicle }) {
     </>}
     {!isExternal && <Field label="Vehicle Owner"><Input value={form.owner} onChange={e=>change('owner',e.target.value)}/></Field>}
     <Field label="Check-in Date & Time"><Input type="datetime-local" value={form.checkInDateTime} onChange={e=>change('checkInDateTime',e.target.value)}/></Field>
+    
     <Field label="Status"><Select value={form.status} onChange={e=>change('status',e.target.value)}><option>Active</option><option>Under Repair</option><option>Out of Service</option><option>Build in Progress</option><option>Built and Testing</option><option>Delivered</option></Select></Field>
     <Field label="Expected Delivery Date"><Input type="date" value={form.expectedDeliveryDate} onChange={e=>change('expectedDeliveryDate',e.target.value)}/></Field>
     <Field label="Hour Meter"><Input type="number" value={form.hours} onChange={e=>change('hours',e.target.value)}/></Field>
@@ -122,6 +159,12 @@ export function VehicleForm({ onDone, transaction, initialVehicle }) {
         {form.mechanic==='manual' && <Input placeholder="Type mechanic name manually" value={manualMechanic} onChange={e=>{setManualMechanic(e.target.value); change('manualMechanic',e.target.value)}}/>}
       </div>
     </Field>
+    <Field label="Vehicle Checklist">
+  <VehicleChecklist
+    checklist={checklist}
+    setChecklist={setChecklist}
+  />
+</Field>
     <Field label="Photo Upload"><Input type="file" multiple /></Field>
     <Field label="Notes"><TextArea value={form.notes} onChange={e=>change('notes',e.target.value)}/></Field>
     <div className="form-actions"><Button>{initialVehicle ? 'Save Vehicle Updates' : 'Save Vehicle'}</Button></div>
@@ -141,31 +184,176 @@ export function AssessmentForm({ onDone, prefillVehicleId = '', prefillVehiclePl
   const [manualVehicle, setManualVehicle] = useState(prefillVehiclePlate || '');
   const [issue, setIssue] = useState('');
   const [conclusion, setConclusion] = useState('');
-  const [partId, setPartId] = useState(inventory[0]?.id || 'manual');
-  const [manualPart, setManualPart] = useState('');
-  const [qty, setQty] = useState(1);
-  const [parts, setParts] = useState([]);
+const [partId, setPartId] = useState('');
+const [partSearch, setPartSearch] = useState('');
+const [manualPart, setManualPart] = useState('');
+const [qty, setQty] = useState(1);
+const [parts, setParts] = useState([]);
+ const partsTotalCost = parts.reduce((sum, p) => {
+  return sum + Number(p.lineTotal ?? Number(p.qty || 0) * Number(p.sellingPrice || 0));
+}, 0);
 
-  function addPart() {
-    if (partId === 'manual') {
-      if (!manualPart.trim()) return;
-      setParts(prev => [...prev, { partId: 'manual', name: manualPart.trim(), qty: Number(qty || 1) }]);
-      setManualPart('');
-      return;
+const filteredInventory = useMemo(() => {
+  const q = partSearch.trim().toLowerCase();
+
+  if (!q) return inventory.slice(0, 30);
+
+  return inventory
+    .filter((p) => {
+      const text = `
+        ${p.sku || ''}
+        ${p.name || ''}
+        ${p.category || ''}
+        ${p.location || ''}
+        ${p.supplier || ''}
+        ${p.supplierName || ''}
+      `.toLowerCase();
+
+      return text.includes(q);
+    })
+    .slice(0, 30);
+}, [inventory, partSearch]);
+
+function formatMoney(value) {
+  return `Rs ${Number(value || 0).toFixed(2)}`;
+}
+
+function selectPartFromSearch(item) {
+  setPartId(item.id);
+  setPartSearch(`${item.sku || item.id} - ${item.name}`);
+}
+
+async function fetchFreshInventoryItem(id) {
+  try {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('accessToken') ||
+      localStorage.getItem('authToken') ||
+      '';
+
+    const res = await fetch(`http://localhost:3000/api/inventory/${id}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) {
+      return null;
     }
 
-    const item = inventory.find(p => p.id === partId);
-    if (item) {
-      setParts(prev => [...prev, {
-        partId: item.id,
-        sku: item.sku,
-        name: item.name,
-        qty: Number(qty || 1),
-        stockBefore: item.stock,
-        location: item.location
-      }]);
-    }
+    return await res.json();
+  } catch (err) {
+    console.error('Failed to fetch fresh inventory item:', err);
+    return null;
   }
+}
+
+function getPartSellingPrice(item) {
+  return Number(
+    item?.sellingPrice ??
+      item?.SellingPrice ??
+      item?.selling_price ??
+      item?.price ??
+      item?.unitPrice ??
+      item?.lastPrice ??
+      0
+  );
+}
+async function fetchFreshInventoryItem(id) {
+  try {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('accessToken') ||
+      localStorage.getItem('authToken') ||
+      '';
+
+    const res = await fetch(`http://localhost:3000/api/inventory/${id}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) return null;
+
+    return await res.json();
+  } catch (err) {
+    console.error('Failed to fetch fresh inventory item:', err);
+    return null;
+  }
+}
+
+function getPartSellingPrice(item) {
+  return Number(
+    item?.sellingPrice ??
+      item?.SellingPrice ??
+      item?.selling_price ??
+      item?.price ??
+      item?.unitPrice ??
+      item?.lastPrice ??
+      0
+  );
+}
+
+function buildPartLine(item, quantity) {
+  const qtyNum = Number(quantity || 1);
+  const sellingPrice = getPartSellingPrice(item);
+
+  return {
+    partId: item.id,
+    sku: item.sku,
+    name: item.name,
+    qty: qtyNum,
+    sellingPrice,
+    lineTotal: qtyNum * sellingPrice,
+    stockBefore: item.stock ?? item.currentStock ?? 0,
+    location: item.location,
+  };
+}
+
+async function addPart() {
+  if (partId === 'manual') {
+    if (!manualPart.trim()) return;
+
+    const qtyNum = Number(qty || 1);
+
+    setParts((prev) => [
+      ...prev,
+      {
+        partId: 'manual',
+        sku: 'MANUAL',
+        name: manualPart.trim(),
+        qty: qtyNum,
+        sellingPrice: 0,
+        lineTotal: 0,
+      },
+    ]);
+
+    setManualPart('');
+    setPartSearch('');
+    setPartId('');
+    setQty(1);
+    return;
+  }
+
+  const localItem = inventory.find((p) => p.id === partId);
+
+  if (!localItem) {
+    alert('Please select a valid part from inventory.');
+    return;
+  }
+
+  const freshItem = await fetchFreshInventoryItem(partId);
+  const item = freshItem || localItem;
+
+  const partLine = buildPartLine(item, qty);
+
+  setParts((prev) => [...prev, partLine]);
+
+  setPartSearch('');
+  setPartId('');
+  setQty(1);
+}
+
 
   function removePart(index) {
     setParts(prev => prev.filter((_, i) => i !== index));
@@ -175,15 +363,19 @@ export function AssessmentForm({ onDone, prefillVehicleId = '', prefillVehiclePl
     e.preventDefault();
 
     const selectedVehicle = vehicles.find(v => v.id === vehicleId);
-    const payload = {
-      vehicleMode,
-      vehicleId: vehicleMode === 'existing' ? vehicleId : '',
-      vehicle: vehicleMode === 'existing' ? (selectedVehicle?.plate || selectedVehicle?.id || '') : manualVehicle,
-      issue,
-      conclusion,
-      parts,
-      mechanic: currentUser?.name || 'Mechanic'
-    };
+   const payload = {
+  vehicleMode,
+  vehicleId: vehicleMode === 'existing' ? vehicleId : '',
+  vehicle:
+    vehicleMode === 'existing'
+      ? selectedVehicle?.plate || selectedVehicle?.plateNumber || selectedVehicle?.id || ''
+      : manualVehicle,
+  issue,
+  conclusion,
+  parts,
+  partsTotalCost,
+  mechanic: currentUser?.name || 'Mechanic',
+};
 
     if (!payload.vehicle && !payload.vehicleId) {
       alert('Please select a vehicle or input a vehicle plate/reference.');
@@ -233,20 +425,81 @@ export function AssessmentForm({ onDone, prefillVehicleId = '', prefillVehiclePl
         <TextArea value={conclusion} onChange={e => setConclusion(e.target.value)} placeholder="Write diagnosis or inspection notes..." />
       </Field>
 
-      <Field label="Required Part">
-        <div className="inline-fields">
-          <Select value={partId} onChange={e => setPartId(e.target.value)}>
-            {inventory.map(p => (
-              <option value={p.id} key={p.id}>
-                {p.sku || p.id} | {p.name} | Qty: {p.stock} | {p.location || 'No location'}
-              </option>
-            ))}
-            <option value="manual">Manual input</option>
-          </Select>
-          <Input type="number" min="1" value={qty} onChange={e => setQty(e.target.value)} />
-          <Button type="button" variant="secondary" onClick={addPart}>Add</Button>
-        </div>
-      </Field>
+   <Field label="Required Part">
+  <div className="part-search-picker">
+    <Input
+      placeholder="Type SKU, part name, category, or location..."
+      value={partSearch}
+      onChange={(e) => {
+        setPartSearch(e.target.value);
+        setPartId('');
+      }}
+    />
+
+    <Select
+      value={partId}
+      onChange={(e) => {
+        const value = e.target.value;
+        setPartId(value);
+
+        if (value === 'manual') {
+          setPartSearch('');
+          return;
+        }
+
+        const selected = inventory.find((p) => p.id === value);
+
+        if (selected) {
+          setPartSearch(`${selected.sku || selected.id} - ${selected.name}`);
+        }
+      }}
+    >
+      <option value="">Choose matching part</option>
+
+      {filteredInventory.map((p) => (
+        <option value={p.id} key={p.id}>
+          {p.sku || p.id} | {p.name} | Qty: {p.stock ?? p.currentStock ?? 0} | {formatMoney(p.sellingPrice)} | {p.location || 'No location'}
+        </option>
+      ))}
+
+      <option value="manual">Manual input</option>
+    </Select>
+
+    {partSearch.trim() && filteredInventory.length > 0 && (
+      <div className="part-search-results">
+        {filteredInventory.slice(0, 8).map((p) => (
+          <button
+            type="button"
+            key={p.id}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              selectPartFromSearch(p);
+            }}
+          >
+            <b>{p.sku || p.id}</b>
+            <span>{p.name}</span>
+            <small>
+              Stock: {p.stock ?? p.currentStock ?? 0} • Price: {formatMoney(p.sellingPrice)} • {p.location || 'No location'}
+            </small>
+          </button>
+        ))}
+      </div>
+    )}
+
+    <div className="part-search-actions">
+      <Input
+        type="number"
+        min="1"
+        value={qty}
+        onChange={(e) => setQty(e.target.value)}
+      />
+
+      <Button type="button" variant="secondary" onClick={addPart}>
+        Add
+      </Button>
+    </div>
+  </div>
+</Field>
 
       {partId === 'manual' && (
         <Field label="Manual Part Name">
@@ -254,14 +507,29 @@ export function AssessmentForm({ onDone, prefillVehicleId = '', prefillVehiclePl
         </Field>
       )}
 
-      <div className="part-list editable-parts">
-        {parts.map((p, i) => (
-          <span key={`${p.name}-${i}`}>
-            {p.name} x {p.qty}
-            <button type="button" className="part-remove" onClick={() => removePart(i)}>×</button>
-          </span>
-        ))}
-      </div>
+       <PartsCostTable parts={parts} />
+     <div className="part-list editable-parts">
+  {parts.map((p, i) => (
+    <span key={`${p.name}-${i}`}>
+      <b>{p.name}</b>
+      x {p.qty}
+      — Rs {Number(p.sellingPrice || 0).toFixed(2)}
+      — Total Rs {Number(p.lineTotal ?? Number(p.qty || 0) * Number(p.sellingPrice || 0)).toFixed(2)}
+
+      <button
+        type="button"
+        className="part-remove"
+        onClick={() => removePart(i)}
+      >
+        Remove
+      </button>
+    </span>
+  ))}
+</div>
+
+<div className="form-actions assessment-cost-summary">
+  <b>Total Assessment Parts Cost:</b> Rs {Number(partsTotalCost || 0).toFixed(2)}
+</div>
 
       <Field label="Photo Upload">
         <Input type="file" multiple />
@@ -282,8 +550,12 @@ export function GarageOpForm({ onDone, transaction }) {
   const transactionVehicle = vehicles.find(v=>v.sourceTransactionId === transaction?.id);
   const [form, setForm] = useState({ vehicleMode:'existing', vehicleId: transactionVehicle?.id || selectedAssessment?.vehicleId || vehicles[0]?.id || '', manualVehicle:'', assessmentId: selectedAssessment?.id || '', transactionId: transaction?.id || '', type: transaction ? 'Build / Assembly' : 'Repair', checkInDateTime: toLocalInputValue(), expectedDeliveryDate: transaction?.expectedDeliveryDate || '', workDone: transaction ? 'Build/assembly started from purchase order.' : '', labor:'1 hr', status: transaction ? 'Build in Progress' : 'Ongoing', paymentStatus: 'Pending', mechanic: currentUser?.name || 'Workshop Team' });
   const selectedVehicle = vehicles.find(v=>v.id===form.vehicleId);
+  const [selectedMechanics, setSelectedMechanics] = useState([]);
   useEffect(()=>{ if(selectedVehicle?.ownership === 'Internal' && form.paymentStatus === 'Pending') setForm(prev=>({...prev,paymentStatus:'None'})); }, [form.vehicleId]);
-  function save(e){ e.preventDefault(); addGarageOp(form); onDone?.(); }
+  function save(e){ e.preventDefault(); addGarageOp({
+  ...form,
+  mechanicIds: selectedMechanics
+}); onDone?.(); }
   return <form onSubmit={save} className="form-grid">
     {transaction && <div className="notice form-actions"><b>Admin Request:</b> This garage ticket is linked to {transaction.id} / {transaction.poNumber}. Mechanic can update expected delivery and progress.</div>}
     <Field label="Vehicle Selection"><Select value={form.vehicleMode} onChange={e=>setForm({...form, vehicleMode:e.target.value})}><option value="existing">Select vehicle</option><option value="manual">Input manually</option></Select></Field>
@@ -293,6 +565,13 @@ export function GarageOpForm({ onDone, transaction }) {
     <Field label="Check-in Date & Time"><Input type="datetime-local" value={form.checkInDateTime} onChange={e=>setForm({...form, checkInDateTime:e.target.value})}/></Field>
     <Field label="Expected Delivery Date"><Input type="date" value={form.expectedDeliveryDate} onChange={e=>setForm({...form,expectedDeliveryDate:e.target.value})}/></Field>
     <Field label="Mechanic"><Select value={form.mechanic} onChange={e=>setForm({...form,mechanic:e.target.value})}><option value="">Select mechanic</option>{mechanics.map(m=><option key={m.id || m.email} value={m.name}>{m.name}</option>)}<option value="Workshop Team">Workshop Team</option></Select></Field>
+    <Field label="Assigned Mechanics">
+  <MultipleMechanicsSelect
+    mechanics={mechanics}
+    selectedMechanics={selectedMechanics}
+    setSelectedMechanics={setSelectedMechanics}
+  />
+</Field>
     <Field label="Status"><Select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>Ongoing</option><option>Build in Progress</option><option>Built and Testing</option><option>Delivered</option><option>Completed</option></Select></Field>
     <Field label="Payment Status"><Select value={form.paymentStatus} onChange={e=>setForm({...form,paymentStatus:e.target.value})}><option>None</option><option>Pending</option><option>Paid</option></Select></Field>
     <Field label="Work Done / Work Plan"><TextArea required value={form.workDone} onChange={e=>setForm({...form,workDone:e.target.value})}/></Field>
@@ -308,6 +587,13 @@ export function TransactionForm({ onDone }) {
   function save(e){ e.preventDefault(); createTransaction(form); onDone?.(); }
   return <form onSubmit={save} className="form-grid">
     <Field label="Transaction Type"><Select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option>External Vehicle Order</option><option>Parts Re-order</option><option>Repair / Service Billing</option></Select></Field>
+    <Field label="Assigned Mechanics">
+  <MultipleMechanicsSelect
+    mechanics={mechanics}
+    selectedMechanics={selectedMechanics}
+    setSelectedMechanics={setSelectedMechanics}
+  />
+</Field>
     <Field label="Status"><Select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>Pending</option><option>In Progress</option><option>Build in Progress</option></Select></Field>
     <Field label="Supplier / Customer Name"><Input required value={form.supplier} onChange={e=>setForm({...form,supplier:e.target.value})}/></Field>
     <Field label="Supplier / Customer Email"><Input type="email" value={form.supplierEmail} onChange={e=>setForm({...form,supplierEmail:e.target.value})}/></Field>
@@ -322,3 +608,6 @@ export function TransactionForm({ onDone }) {
     <div className="form-actions"><Button>Save Transaction</Button></div>
   </form>;
 }
+
+
+

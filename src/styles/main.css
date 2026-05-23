@@ -1243,3 +1243,516 @@
   border-color:#2b0046 !important;
   border-top-color:#2b0046 !important;
 }
+
+/* ================================
+   FIX: Vehicles page layout glitch
+   ================================ */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  width: 320px;
+  min-width: 320px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  padding-bottom: 120px;
+}
+
+.sidebar nav {
+  margin-top: 22px;
+  display: grid;
+  gap: 10px;
+}
+
+.logout {
+  position: fixed;
+  left: 24px;
+  bottom: 28px;
+  width: 260px;
+  z-index: 20;
+}
+
+.main-area {
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.page {
+  max-width: none;
+  width: 100%;
+  padding: 34px 28px;
+  margin: 0;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 18px;
+}
+
+.table-wrap table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+.table-wrap th,
+.table-wrap td {
+  vertical-align: middle;
+  padding: 18px 20px;
+}
+
+.table-wrap td {
+  font-size: 15px;
+}
+
+.table-vehicle-img {
+  width: 120px !important;
+  height: 75px !important;
+  object-fit: contain;
+  background: #050505;
+  border-radius: 14px;
+  display: block;
+  padding: 4px;
+}
+
+.vehicle-search-results img,
+.inline-suggestions img {
+  width: 90px;
+  height: 58px;
+  object-fit: contain;
+  background: #050505;
+  border-radius: 12px;
+  padding: 4px;
+}
+
+/* Fix broken image alt text looking ugly */
+img {
+  color: transparent;
+}
+
+/* Better action button alignment */
+.open-btn {
+  min-width: 130px;
+  padding: 13px 22px;
+  border-radius: 999px;
+  font-weight: 900;
+  background: white;
+  color: var(--purple);
+  border: 2px solid var(--purple);
+  cursor: pointer;
+}
+
+.open-btn:hover {
+  background: var(--purple);
+  color: white;
+}
+
+/* Better table text wrapping */
+.table-wrap td:nth-child(3),
+.table-wrap td:nth-child(5) {
+  max-width: 180px;
+  word-break: normal;
+}
+
+/* Responsive fix */
+@media (max-width: 980px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    padding-bottom: 20px;
+  }
+
+  .logout {
+    position: static;
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .page {
+    padding: 24px 16px;
+  }
+}
+
+/* ================================
+   FIX: Vehicle image display
+   ================================ */
+
+.vehicle-img-box {
+  width: 150px;
+  height: 95px;
+  background: #050505;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vehicle-img-box .table-vehicle-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block;
+  border-radius: 18px;
+  background: #050505;
+  padding: 0 !important;
+}
+
+.table-wrap td:nth-child(2) {
+  width: 170px;
+}
+
+/* ================================
+   FIX: Vehicle history image display
+   ================================ */
+
+.normal-vehicle-photo {
+  width: 280px;
+  height: 180px;
+  background: #050505;
+  border-radius: 24px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.normal-vehicle-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Inspect vehicle modal image */
+.inspection-map-stage {
+  position: relative;
+  min-height: 420px;
+  background: #050505;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inspection-map-stage img {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  object-fit: contain;
+  display: block;
+  background: #050505;
+}
+
+/* Hide broken image alt text */
+.normal-vehicle-photo img,
+.inspection-map-stage img {
+  color: transparent;
+}
+
+/* ==========================================================
+   FINAL FIX: Garage history + edit vehicle image display
+   Put this at the VERY BOTTOM of main.css
+   ========================================================== */
+
+/* Garage history hero image box */
+.clean-vehicle-hero {
+  display: flex !important;
+  align-items: center !important;
+  gap: 28px !important;
+  min-height: 260px !important;
+}
+
+.clean-vehicle-hero .normal-vehicle-photo {
+  width: 320px !important;
+  height: 210px !important;
+  min-width: 320px !important;
+  min-height: 210px !important;
+  max-width: 320px !important;
+  max-height: 210px !important;
+  background: #050505 !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.clean-vehicle-hero .normal-vehicle-photo img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  display: block !important;
+  background: #050505 !important;
+  border-radius: 22px !important;
+  padding: 10px !important;
+  filter: none !important;
+}
+
+/* Edit vehicle modal preview image */
+.vehicle-form-preview {
+  display: flex !important;
+  align-items: center !important;
+  gap: 22px !important;
+}
+
+.vehicle-form-preview > div:first-child {
+  width: 190px !important;
+  height: 120px !important;
+  min-width: 190px !important;
+  background: #050505 !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.vehicle-form-preview img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  display: block !important;
+  background: #050505 !important;
+  border-radius: 18px !important;
+  padding: 8px !important;
+  filter: none !important;
+}
+
+/* Inspect vehicle modal image */
+.inspection-map-stage {
+  background: #050505 !important;
+  overflow: hidden !important;
+}
+
+.inspection-map-stage img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 90% !important;
+  max-height: 360px !important;
+  object-fit: contain !important;
+  background: #050505 !important;
+  filter: none !important;
+}
+
+/* Hide ugly broken image text */
+.normal-vehicle-photo img,
+.vehicle-form-preview img,
+.inspection-map-stage img,
+.table-vehicle-img {
+  color: transparent !important;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .clean-vehicle-hero {
+    display: grid !important;
+  }
+
+  .clean-vehicle-hero .normal-vehicle-photo {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 220px !important;
+  }
+
+  .vehicle-form-preview {
+    display: grid !important;
+  }
+
+  .vehicle-form-preview > div:first-child {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 180px !important;
+  }
+}
+
+/* Searchable inventory picker in Assessment form */
+.part-search-picker {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+
+.part-search-results {
+  position: absolute;
+  top: 54px;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(43, 0, 72, 0.18);
+  overflow: hidden;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.part-search-results button {
+  width: 100%;
+  border: 0;
+  background: white;
+  text-align: left;
+  padding: 12px 14px;
+  display: grid;
+  gap: 3px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+}
+
+.part-search-results button:hover {
+  background: #f6fff8;
+}
+
+.part-search-results b {
+  color: var(--purple);
+}
+
+.part-search-results span {
+  font-weight: 900;
+  color: var(--text);
+}
+
+.part-search-results small {
+  color: var(--muted);
+}
+
+.part-search-actions {
+  display: grid;
+  grid-template-columns: 100px auto;
+  gap: 8px;
+}
+
+/* Assessment price tally display */
+.assessment-cost-summary {
+  background: #f6fff8;
+  border: 1px solid #bdf5cf;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-weight: 1000;
+  color: var(--purple);
+}
+
+.editable-parts span {
+  border-radius: 16px !important;
+  padding: 10px 12px !important;
+  background: #fff8fb !important;
+  border: 1px solid var(--line);
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+/* Remove horizontal scrollbar from storekeeper assessment table */
+.required-parts-clean-table {
+  width: 100%;
+  overflow: visible !important;
+}
+
+.required-parts-clean-table table {
+  width: 100%;
+  min-width: 0 !important;
+  table-layout: fixed;
+}
+
+.required-parts-clean-table th,
+.required-parts-clean-table td {
+  white-space: normal !important;
+  word-break: break-word;
+}
+
+/* Assessment / Store Keeper price tally fix */
+.assessment-detail-clean .table-wrap {
+  overflow-x: visible !important;
+}
+
+.required-parts-clean-table {
+  width: 100%;
+  overflow: visible !important;
+}
+
+.required-parts-clean-table .table-wrap {
+  overflow: visible !important;
+}
+
+.required-parts-clean-table table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+.required-parts-clean-table th,
+.required-parts-clean-table td {
+  white-space: normal !important;
+  word-break: break-word !important;
+  padding: 12px 10px !important;
+  font-size: 12px !important;
+}
+
+.storekeeper-price-preview {
+  background: #f6fff8;
+  border: 1px solid #bdf5cf;
+  border-radius: 16px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 2px;
+  color: var(--purple);
+  min-width: 150px;
+}
+
+.storekeeper-price-preview span,
+.storekeeper-price-preview small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.storekeeper-price-preview b {
+  font-size: 16px;
+}
+
+.assessment-cost-summary {
+  background: #f6fff8;
+  border: 1px solid #bdf5cf;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-weight: 1000;
+  color: var(--purple);
+  margin-bottom: 14px;
+}
+
+.inventory-picker {
+  grid-template-columns: 1.5fr 0.5fr 0.8fr auto !important;
+}
+
+@media (max-width: 900px) {
+  .inventory-picker {
+    grid-template-columns: 1fr !important;
+  }
+}

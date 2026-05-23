@@ -44,7 +44,7 @@ export default function GuestDropoff(){
       <Field label="Email"><Input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></Field>
       <Field label="Date & Time"><Input readOnly value={form.createdAt.replace('T',' ')}/></Field>
       <Field label="Reason / Notes"><TextArea required value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></Field>
-      {form.imageUrl && <div className="vehicle-form-preview form-actions"><img src={form.imageUrl}/><section><h3>{form.model}</h3><p>{form.plate} • {form.cc}</p></section></div>}
+      {form.imageUrl && <div className="vehicle-form-preview form-actions"><img src={form.imageUrl || '/vehicles/placeholder-car.png' || '/vehicles/placeholder-car.png'} onError={(e)=>{e.currentTarget.onerror=null;e.currentTarget.src='/vehicles/placeholder-car.png';}} onError={(e)=>{e.currentTarget.onerror=null;e.currentTarget.src='/vehicles/placeholder-car.png';}}/><section><h3>{form.model}</h3><p>{form.plate} • {form.cc}</p></section></div>}
       <div className="form-actions"><Button>Create Guest Garage Ticket</Button><Button type="button" variant="secondary" onClick={()=>navigate('/login')}>Back</Button></div>
     </form>
   </Card></div>
