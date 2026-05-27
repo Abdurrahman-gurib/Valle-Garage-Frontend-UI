@@ -177,6 +177,7 @@ export function AssessmentForm({ onDone, prefillVehicleId = '', prefillVehiclePl
   const inventory = app?.inventory || [];
   const addAssessment = app?.addAssessment;
   const currentUser = app?.currentUser || { name: 'Mechanic' };
+  const mechanics = app?.mechanics || [];
 
   const firstVehicleId = vehicles[0]?.id || '';
   const [vehicleMode, setVehicleMode] = useState(prefillVehicleId || firstVehicleId ? 'existing' : 'manual');
@@ -188,6 +189,7 @@ const [partId, setPartId] = useState('');
 const [partSearch, setPartSearch] = useState('');
 const [manualPart, setManualPart] = useState('');
 const [qty, setQty] = useState(1);
+const [selectedMechanics, setSelectedMechanics] = useState([]);
 const [parts, setParts] = useState([]);
  const partsTotalCost = parts.reduce((sum, p) => {
   return sum + Number(p.lineTotal ?? Number(p.qty || 0) * Number(p.sellingPrice || 0));
@@ -375,6 +377,7 @@ async function addPart() {
   parts,
   partsTotalCost,
   mechanic: currentUser?.name || 'Mechanic',
+  mechanicIds: selectedMechanics,
 };
 
     if (!payload.vehicle && !payload.vehicleId) {
@@ -416,8 +419,7 @@ async function addPart() {
           <Input value={manualVehicle} onChange={e => setManualVehicle(e.target.value)} placeholder="Enter plate number or vehicle reference" />
         </Field>
       )}
-
-      <Field label="Issue Detected">
+<Field label="Issue Detected">
         <Input required value={issue} onChange={e => setIssue(e.target.value)} placeholder="Example: Brake issue, engine noise, oil leak..." />
       </Field>
 
@@ -587,13 +589,6 @@ export function TransactionForm({ onDone }) {
   function save(e){ e.preventDefault(); createTransaction(form); onDone?.(); }
   return <form onSubmit={save} className="form-grid">
     <Field label="Transaction Type"><Select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option>External Vehicle Order</option><option>Parts Re-order</option><option>Repair / Service Billing</option></Select></Field>
-    <Field label="Assigned Mechanics">
-  <MultipleMechanicsSelect
-    mechanics={mechanics}
-    selectedMechanics={selectedMechanics}
-    setSelectedMechanics={setSelectedMechanics}
-  />
-</Field>
     <Field label="Status"><Select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>Pending</option><option>In Progress</option><option>Build in Progress</option></Select></Field>
     <Field label="Supplier / Customer Name"><Input required value={form.supplier} onChange={e=>setForm({...form,supplier:e.target.value})}/></Field>
     <Field label="Supplier / Customer Email"><Input type="email" value={form.supplierEmail} onChange={e=>setForm({...form,supplierEmail:e.target.value})}/></Field>

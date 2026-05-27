@@ -1756,3 +1756,17 @@ img {
     grid-template-columns: 1fr !important;
   }
 }
+/* Advanced fuel and vehicle reporting additions */
+.suggestion-panel{position:absolute;z-index:20;background:#fff;border:1px solid rgba(43,0,70,.14);box-shadow:0 18px 45px rgba(43,0,70,.14);border-radius:16px;margin-top:8px;max-height:260px;overflow:auto;min-width:min(420px,90vw);padding:8px;display:flex;flex-direction:column;gap:6px}.field{position:relative}.suggestion-panel button{border:0;background:#faf7ff;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;color:#2b0046}.suggestion-panel button:hover{background:#f1e8ff}.suggestion-panel span{color:#706784;font-size:.86rem}.tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 20px}.tabs button{border:1px solid rgba(43,0,70,.16);background:#fff;border-radius:999px;padding:12px 18px;font-weight:800;color:#2b0046;cursor:pointer}.tabs button.active{background:#2b0046;color:#fff}.metric-card{display:flex;flex-direction:column;gap:6px}.metric-card span{font-size:.8rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#706784}.metric-card b{font-size:1.7rem;color:#2b0046}.metric-card small{color:#706784}.mini-bar{display:grid;gap:7px;margin:12px 0}.mini-bar>div{display:flex;justify-content:space-between;gap:12px;color:#2b0046}.mini-bar i{height:10px;border-radius:999px;background:#eee4f8;overflow:hidden}.mini-bar em{display:block;height:100%;background:linear-gradient(90deg,#2dfc72,#7d42ff);border-radius:inherit}.report-actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}.form-grid.five{grid-template-columns:repeat(5,minmax(0,1fr))}.notice.success{background:#ecfff3;border:1px solid #2dfc72;color:#114d24;border-radius:14px;padding:12px 14px;font-weight:800}
+@media(max-width:1000px){.form-grid.five{grid-template-columns:repeat(2,minmax(0,1fr))}.login-card [style*="repeat(3"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:680px){.form-grid.five{grid-template-columns:1fr}.login-card [style*="repeat(3"]{grid-template-columns:1fr!important}}
+
+
+/* Final operational polish */
+.multi-mechanics-picker { display:flex; flex-direction:column; gap:10px; }
+.selected-chips { display:flex; flex-wrap:wrap; gap:8px; align-items:center; min-height:34px; }
+.selected-chips button { border:1px solid rgba(47,16,77,.14); background:#f7f1ff; color:#2f104d; border-radius:999px; padding:7px 10px; display:inline-flex; gap:8px; align-items:center; cursor:pointer; font-weight:800; }
+.selected-chips button b { color:#ff2d75; }
+.suggestion-panel, .part-search-results { z-index:20; max-height:260px; overflow:auto; }
+.mini-table { max-height:560px; overflow:auto; }
+.report-page .metric-card { min-height:110px; }

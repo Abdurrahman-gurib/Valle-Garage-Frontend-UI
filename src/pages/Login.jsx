@@ -32,6 +32,24 @@ const roles = [
     pass: "password123",
   },
   {
+    role: "fuel",
+    title: "FUEL\nSYSTEM",
+    subtitle: "Fuel Management System",
+    desc: "Record fuel litres and extract fuel reports by quad, day, week or month.",
+    color: "green",
+    email: "fuel@vallepark.com",
+    pass: "password123",
+  },
+  {
+    role: "vehicle_manager",
+    title: "VEHICLES\nIN / OUT",
+    subtitle: "Vehicles Management System",
+    desc: "Track quad activity, guide, invoice, out time, return time and trip duration.",
+    color: "yellow",
+    email: "vehicle@vallepark.com",
+    pass: "password123",
+  },
+  {
     role: "guest",
     title: "GUEST",
     subtitle: "Garage Drop-off",
@@ -88,7 +106,10 @@ export default function Login() {
     }
 
     const res = await login(selected.role, email, password);
-    if (res.ok) navigate("/dashboard");
+    if (res.ok) {
+      const next = selected.role === "fuel" ? "/fuel" : selected.role === "vehicle_manager" ? "/vehicle-out" : "/dashboard";
+      navigate(next);
+    }
     else setError(res.message);
   }
 
@@ -166,7 +187,7 @@ export default function Login() {
         <section
           className="login-card"
           style={{
-            maxWidth: "1080px",
+            maxWidth: "1240px",
             margin: "0 auto",
             background: "rgba(255,255,255,0.93)",
             backdropFilter: "blur(14px)",
@@ -237,7 +258,7 @@ export default function Login() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                     gap: "22px",
                     marginTop: "36px",
                   }}
@@ -250,7 +271,7 @@ export default function Login() {
                         background: "#ffffff",
                         borderRadius: "24px",
                         padding: "32px 28px",
-                        minHeight: "240px",
+                        minHeight: "230px",
                         textAlign: "left",
                         border:
                           r.color === "pink"

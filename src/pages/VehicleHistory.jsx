@@ -325,6 +325,8 @@ export default function VehicleHistory() {
   }, 0);
 
   const totalVehicleCost = totalAssessmentCost + totalGarageCost;
+  const totalFuelLitres = Number(history.totalFuelLitres || 0);
+  const vehicleOutCount = Number(history.outCount || 0);
 
   return (
     <div className="page">
@@ -456,6 +458,18 @@ export default function VehicleHistory() {
           <h3>Garage Visits</h3>
           <strong>{history.visits}</strong>
           <p>Total assessments + work jobs</p>
+        </Card>
+
+        <Card>
+          <h3>Fuel Filled</h3>
+          <strong>{totalFuelLitres.toFixed(2)} L</strong>
+          <p>Filtered period fuel usage</p>
+        </Card>
+
+        <Card>
+          <h3>Times Out</h3>
+          <strong>{vehicleOutCount}</strong>
+          <p>Filtered period activity outings</p>
         </Card>
 
         <Card>
@@ -651,6 +665,21 @@ export default function VehicleHistory() {
 
             <td>{g.paymentStatus || 'None'}</td>
           </tr>
+        ))}
+      </Table>
+
+
+      <h2 className="section-small">Fuel Usage History</h2>
+      <Table headers={['Date','Fuel Type','Meter','Litres','Notes']}>
+        {(history.fuelConsumptions || []).map((f) => (
+          <tr key={f.id}><td>{f.recordedAt || '-'}</td><td>{f.fuelType}</td><td>{f.meterReading} {f.meterType}</td><td><b>{f.fuelLitres} L</b></td><td>{f.notes || '-'}</td></tr>
+        ))}
+      </Table>
+
+      <h2 className="section-small">Vehicle In / Out Activity History</h2>
+      <Table headers={['Out Time','In Time','Invoice','Guide','Activity','Duration','Destination']}>
+        {(history.vehicleOutActivities || []).map((o) => (
+          <tr key={o.id}><td>{o.startDateTime || '-'}</td><td>{o.endDateTime || '-'}</td><td>{o.invoiceNumber || '-'}</td><td>{o.guideName || '-'}</td><td>{o.quadActivity || o.activityType || '-'}</td><td>{o.tripDuration || '-'}</td><td>{o.destination || '-'}</td></tr>
         ))}
       </Table>
 

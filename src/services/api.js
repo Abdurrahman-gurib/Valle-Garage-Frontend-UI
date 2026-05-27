@@ -69,8 +69,10 @@ export const api = {
   inventory: {
     list: () => apiRequest('/inventory'),
     lowStock: () => apiRequest('/inventory/low-stock'),
+    movements: () => apiRequest('/inventory/movements'),
     create: (payload) => apiRequest('/inventory', { method: 'POST', body: payload }),
-    update: (id, payload) => apiRequest(`/inventory/${id}`, { method: 'PATCH', body: payload })
+    update: (id, payload) => apiRequest(`/inventory/${id}`, { method: 'PATCH', body: payload }),
+    addStock: (id, payload) => apiRequest(`/inventory/${id}/add-stock`, { method: 'POST', body: payload })
   },
   transactions: {
     list: () => apiRequest('/transactions'),
@@ -80,7 +82,23 @@ export const api = {
   },
   reports: {
     dashboard: () => apiRequest('/reports/dashboard'),
-    history: () => apiRequest('/reports/maintenance-history')
+    history: () => apiRequest('/reports/maintenance-history'),
+    fuel: (query='') => apiRequest(`/reports/fuel-consumption${query}`),
+    vehicleOut: (query='') => apiRequest(`/reports/vehicle-out${query}`),
+    mechanicHours: (query='') => apiRequest(`/reports/mechanic-hours${query}`),
+    vehiclePartsCost: (query='') => apiRequest(`/reports/vehicle-parts-cost${query}`),
+    garageSummary: (query='') => apiRequest(`/reports/garage-summary${query}`),
+    analytics: (query='') => apiRequest(`/reports/analytics${query}`),
+    logExport: (payload) => apiRequest('/reports/export-log', { method: 'POST', body: payload })
+  },
+  fuelConsumptions: {
+    list: () => apiRequest('/fuel-consumptions'),
+    create: (payload) => apiRequest('/fuel-consumptions', { method: 'POST', body: payload })
+  },
+  vehicleOut: {
+    list: () => apiRequest('/vehicle-out'),
+    create: (payload) => apiRequest('/vehicle-out', { method: 'POST', body: payload }),
+    update: (id, payload) => apiRequest(`/vehicle-out/${id}`, { method: 'PATCH', body: payload })
   },
   notifications: {
     list: (role) => apiRequest(role ? `/notifications?role=${role}` : '/notifications')

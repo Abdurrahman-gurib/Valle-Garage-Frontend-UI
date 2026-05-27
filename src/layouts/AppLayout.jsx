@@ -10,6 +10,8 @@ const nav = [
   { to:'/assessments', key:'assessments', label:'Assessments', icon:'✓' },
   { to:'/inventory', key:'inventory', label:'Parts', icon:'▥' },
   { to:'/garage', key:'garage', label:'Garage Work', icon:'⚙' },
+  { to:'/fuel', key:'fuel', label:'Fuel System', icon:'◉' },
+  { to:'/vehicle-out', key:'vehicle-out', label:'Vehicles In / Out', icon:'↗' },
   { to:'/transactions', key:'transactions', label:'Transactions', icon:'▤' },
   { to:'/reports', key:'reports', label:'Reports', icon:'▦' },
   { to:'/settings', key:'settings', label:'Settings', icon:'⚑' }

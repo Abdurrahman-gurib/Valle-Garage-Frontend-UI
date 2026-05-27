@@ -1,305 +1,34 @@
-import { useMemo, useState } from "react";
-import {
-  Badge,
-  Button,
-  Field,
-  Input,
-  Modal,
-  PageHeader,
-  Table,
-  TextArea,
-} from "../components/UI.jsx";
-import { useApp } from "../context/AppContext.jsx";
+import { useMemo, useState } from 'react';
+import { Badge, Button, Field, Input, Modal, PageHeader, Table } from '../components/UI.jsx';
+import { useApp } from '../context/AppContext.jsx';
 
-function formatMoney(value) {
-  const amount = Number(value || 0);
+function money(value){ return `Rs ${Number(value || 0).toLocaleString('en-MU', { minimumFractionDigits:2, maximumFractionDigits:2 })}`; }
+function cleanPart(p){ return { ...p, name:p.name || p.part || '', sellingPrice:Number(p.sellingPrice ?? p.lastPrice ?? p.price ?? 0), stock:Number(p.stock ?? p.currentStock ?? 0), supplier:p.supplier || p.supplierName || '' }; }
 
-  return `Rs ${amount.toLocaleString("en-MU", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+export default function Inventory(){
+  const { inventory=[], createPO, createInventoryItem, updateInventoryItem, addInventoryStock } = useApp();
+  const [search,setSearch]=useState('');
+  const [modal,setModal]=useState(null);
+  const items=useMemo(()=>inventory.map(cleanPart).filter(p=>JSON.stringify(p).toLowerCase().includes(search.toLowerCase())),[inventory,search]);
+  return <div className="page">
+    <PageHeader title="Store Keeper / Parts" subtitle="Editable DB parts: SKU, Part, Selling Price, Stock, Reorder Level and Supplier. Stock issued to assessments/garage work is deducted from the database." action={()=>setModal({type:'add'})} actionLabel="Add Part" />
+    <div className="history-toolbar"><Input placeholder="Search SKU, part, supplier..." value={search} onChange={e=>setSearch(e.target.value)} /><Button variant="secondary" onClick={()=>setModal({type:'stock'})}>Input New Stock</Button></div>
+    <Table headers={["SKU","Part","Selling Price","Stock","Reorder Level","Supplier","Status","Actions"]}>
+      {items.map(p=>{ const low=p.stock<=Number(p.reorderLevel||0); return <tr key={p.id || p.sku}>
+        <td><b>{p.sku}</b></td><td>{p.name}</td><td><b>{money(p.sellingPrice)}</b></td><td>{p.stock}</td><td>{p.reorderLevel}</td><td>{p.supplier || '-'}</td>
+        <td><Badge tone={low?'danger':'success'}>{low?'Re-order':'OK'}</Badge></td>
+        <td className="row-actions"><button className="open-btn" onClick={()=>setModal({type:'edit',item:p})}>Edit</button><button className="open-btn" onClick={()=>setModal({type:'addStock',item:p})}>Add Stock</button><button className="open-btn" onClick={()=>setModal({type:'po',item:p})}>PO</button></td>
+      </tr>})}
+    </Table>
+    {modal?.type==='add' && <Modal title="Add New Part" onClose={()=>setModal(null)} wide><PartForm onSave={async f=>{await createInventoryItem(f); setModal(null);}} /></Modal>}
+    {modal?.type==='edit' && <Modal title="Edit Part" onClose={()=>setModal(null)} wide><PartForm initial={modal.item} onSave={async f=>{await updateInventoryItem(modal.item.dbId || modal.item.id, f); setModal(null);}} /></Modal>}
+    {modal?.type==='addStock' && <Modal title="Input New Stock" onClose={()=>setModal(null)}><StockForm part={modal.item} onSave={async (qty,reason)=>{await addInventoryStock(modal.item.dbId || modal.item.id, qty, reason); setModal(null);}} /></Modal>}
+    {modal?.type==='stock' && <Modal title="Input New Stock" onClose={()=>setModal(null)}><StockPicker parts={items} onSave={async (part,qty,reason)=>{await addInventoryStock(part.dbId || part.id, qty, reason); setModal(null);}} /></Modal>}
+    {modal?.type==='po' && <Modal title="Purchase Order Form" onClose={()=>setModal(null)} wide><POForm part={modal.item} createPO={createPO} /></Modal>}
+  </div>
 }
 
-function getSellingPrice(part) {
-  return Number(
-    part?.sellingPrice ??
-      part?.price ??
-      part?.unitPrice ??
-      part?.lastPrice ??
-      part?.costPrice ??
-      0
-  );
-}
-
-function getStock(part) {
-  return Number(part?.stock ?? part?.currentStock ?? 0);
-}
-
-function getSupplier(part) {
-  return part?.supplier || part?.supplierName || "-";
-}
-
-export default function Inventory() {
-  const { inventory = [], createPO } = useApp();
-  const [modal, setModal] = useState(null);
-
-  const normalizedInventory = useMemo(() => {
-    return inventory.map((p) => ({
-      ...p,
-      displaySellingPrice: getSellingPrice(p),
-      displayStock: getStock(p),
-      displaySupplier: getSupplier(p),
-    }));
-  }, [inventory]);
-
-  return (
-    <div className="page">
-      <PageHeader
-        title="Inventory / CF MOTO Store"
-        subtitle="Low stock items can be re-ordered using a Purchase Order form. Selling price is loaded from the database."
-      />
-
-      <Table
-        headers={[
-          "SKU",
-          "Part",
-          "Selling Price",
-          "Stock",
-          "Reorder Level",
-          "Supplier",
-          "Status",
-          "Action",
-        ]}
-      >
-        {normalizedInventory.map((p) => {
-          const stock = Number(p.displayStock || 0);
-          const reorderLevel = Number(p.reorderLevel || 0);
-
-          return (
-            <tr key={p.id || p.sku}>
-              <td>
-                <b>{p.sku || "-"}</b>
-              </td>
-
-              <td>{p.name || "-"}</td>
-
-              <td>
-                <b>{formatMoney(p.displaySellingPrice)}</b>
-              </td>
-
-              <td>{stock}</td>
-
-              <td>{reorderLevel}</td>
-
-              <td>{p.displaySupplier}</td>
-
-              <td>
-                <Badge tone={stock <= reorderLevel ? "danger" : "success"}>
-                  {stock <= reorderLevel ? "Re-order" : "OK"}
-                </Badge>
-              </td>
-
-              <td>
-                <button
-                  className="open-btn"
-                  type="button"
-                  onClick={() => setModal({ type: "po", item: p })}
-                >
-                  {stock <= reorderLevel ? "Re-order" : "Create PO"}
-                </button>
-              </td>
-            </tr>
-          );
-        })}
-      </Table>
-
-      {modal?.type === "po" && (
-        <Modal title="Purchase Order Form" onClose={() => setModal(null)} wide>
-          <POForm part={modal.item} createPO={createPO} />
-        </Modal>
-      )}
-    </div>
-  );
-}
-
-function POForm({ part, createPO }) {
-  const sellingPrice = getSellingPrice(part);
-
-  const [form, setForm] = useState({
-    supplier: part.supplier || part.supplierName || "",
-    supplierEmail: part.supplierEmail || "",
-    item: part.name || "",
-    quantity: 10,
-    startDate: new Date().toISOString().slice(0, 10),
-    expectedDeliveryDate: "",
-    amount: sellingPrice * 10,
-    poFile: "",
-    message: `Dear Supplier,\n\nPlease process this purchase order for ${part.name}.\n\nRegards,\nVallé Garage & Spare Parts Team`,
-  });
-
-  const [tx, setTx] = useState(null);
-
-  function save() {
-    const t = createPO(part, Number(form.quantity || 0), form);
-    setTx(t);
-  }
-
-  function download() {
-    const text = `VALLÉ GARAGE MANAGEMENT SYSTEM
-PURCHASE ORDER
-
-Supplier: ${form.supplier}
-Email: ${form.supplierEmail}
-Item: ${form.item}
-Quantity: ${form.quantity}
-Unit Selling Price: ${formatMoney(sellingPrice)}
-Amount: ${formatMoney(form.amount)}
-Start Date: ${form.startDate}
-Expected Delivery: ${form.expectedDeliveryDate || "TBD"}
-
-Message:
-${form.message}`;
-
-    const blob = new Blob([text], { type: "text/plain" });
-    const a = document.createElement("a");
-
-    a.href = URL.createObjectURL(blob);
-    a.download = `PO-${form.item}.txt`;
-    a.click();
-  }
-
-  function email() {
-    download();
-
-    window.location.href = `mailto:${
-      form.supplierEmail
-    }?subject=Purchase Order - ${form.item}&body=${encodeURIComponent(
-      form.message +
-        "\n\nThe PO has been downloaded. Please attach it to your email before sending if your email app does not attach automatically."
-    )}`;
-  }
-
-  function updateQuantity(value) {
-    const qty = Number(value || 0);
-
-    setForm({
-      ...form,
-      quantity: value,
-      amount: qty * sellingPrice,
-    });
-  }
-
-  return (
-    <div>
-      <div className="form-grid">
-        <Field label="Supplier">
-          <Input
-            value={form.supplier}
-            onChange={(e) => setForm({ ...form, supplier: e.target.value })}
-          />
-        </Field>
-
-        <Field label="Supplier Email">
-          <Input
-            value={form.supplierEmail}
-            onChange={(e) =>
-              setForm({ ...form, supplierEmail: e.target.value })
-            }
-          />
-        </Field>
-
-        <Field label="Item">
-          <Input
-            value={form.item}
-            onChange={(e) => setForm({ ...form, item: e.target.value })}
-          />
-        </Field>
-
-        <Field label="DB Selling Price">
-          <Input value={formatMoney(sellingPrice)} readOnly />
-        </Field>
-
-        <Field label="Quantity">
-          <Input
-            type="number"
-            min="1"
-            value={form.quantity}
-            onChange={(e) => updateQuantity(e.target.value)}
-          />
-        </Field>
-
-        <Field label="Start Date">
-          <Input
-            type="date"
-            value={form.startDate}
-            onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-          />
-        </Field>
-
-        <Field label="Expected Delivery">
-          <Input
-            type="date"
-            value={form.expectedDeliveryDate}
-            onChange={(e) =>
-              setForm({ ...form, expectedDeliveryDate: e.target.value })
-            }
-          />
-        </Field>
-
-        <Field label="Amount">
-          <Input value={formatMoney(form.amount)} readOnly />
-        </Field>
-
-        <Field label="Attach PO / Supplier Quote">
-          <Input
-            type="file"
-            onChange={(e) =>
-              setForm({ ...form, poFile: e.target.files?.[0]?.name || "" })
-            }
-          />
-
-          {form.poFile && <small>{form.poFile}</small>}
-        </Field>
-
-        <Field label="Edit Message Before Sending">
-          <TextArea
-            value={form.message}
-            onChange={(e) => setForm({ ...form, message: e.target.value })}
-          />
-        </Field>
-      </div>
-
-      <pre className="document-preview">
-        {`VALLÉ GARAGE MANAGEMENT SYSTEM
-PURCHASE ORDER
-
-Supplier: ${form.supplier}
-Email: ${form.supplierEmail}
-Item: ${form.item}
-Quantity: ${form.quantity}
-Unit Selling Price: ${formatMoney(sellingPrice)}
-Amount: ${formatMoney(form.amount)}
-Expected Delivery: ${form.expectedDeliveryDate || "TBD"}
-Status: Pending`}
-      </pre>
-
-      <div className="button-row">
-        <Button onClick={save}>Save PO</Button>
-
-        <Button variant="secondary" onClick={download}>
-          Download PO
-        </Button>
-
-        <Button variant="secondary" onClick={() => window.print()}>
-          Print PO
-        </Button>
-
-        <Button variant="warning" onClick={email}>
-          Send Email
-        </Button>
-      </div>
-
-      {tx && <div className="notice">Saved as transaction {tx.id}</div>}
-    </div>
-  );
-}
+function PartForm({initial={},onSave}){ const [f,setF]=useState({ sku:initial.sku||'', name:initial.name||'', sellingPrice:initial.sellingPrice ?? initial.lastPrice ?? '', stock:initial.stock ?? '', reorderLevel:initial.reorderLevel ?? '', supplier:initial.supplier||'', supplierEmail:initial.supplierEmail||'', category:initial.category||'', location:initial.location||'' }); return <form onSubmit={e=>{e.preventDefault(); onSave(f);}}><div className="form-grid"><Field label="SKU"><Input required value={f.sku} onChange={e=>setF({...f,sku:e.target.value})}/></Field><Field label="Part"><Input required value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></Field><Field label="Selling Price"><Input type="number" step="0.01" value={f.sellingPrice} onChange={e=>setF({...f,sellingPrice:e.target.value})}/></Field><Field label="Stock"><Input type="number" value={f.stock} onChange={e=>setF({...f,stock:e.target.value})}/></Field><Field label="Reorder Level"><Input type="number" value={f.reorderLevel} onChange={e=>setF({...f,reorderLevel:e.target.value})}/></Field><Field label="Supplier"><Input value={f.supplier} onChange={e=>setF({...f,supplier:e.target.value})}/></Field><Field label="Supplier Email"><Input value={f.supplierEmail} onChange={e=>setF({...f,supplierEmail:e.target.value})}/></Field><Field label="Location"><Input value={f.location} onChange={e=>setF({...f,location:e.target.value})}/></Field></div><Button>Save to Database</Button></form> }
+function StockForm({part,onSave}){ const [qty,setQty]=useState(''); const [reason,setReason]=useState('New stock input'); return <form onSubmit={e=>{e.preventDefault(); onSave(qty,reason);}}><p><b>{part.sku}</b> - {part.name}</p><Field label="Quantity to add"><Input type="number" required value={qty} onChange={e=>setQty(e.target.value)}/></Field><Field label="Reason"><Input value={reason} onChange={e=>setReason(e.target.value)}/></Field><Button>Update DB Stock</Button></form> }
+function StockPicker({parts,onSave}){ const [id,setId]=useState(parts[0]?.id || ''); const [qty,setQty]=useState(''); const [reason,setReason]=useState('New stock input'); const part=parts.find(p=>p.id===id); return <form onSubmit={e=>{e.preventDefault(); if(part) onSave(part,qty,reason);}}><Field label="Part"><select className="input" value={id} onChange={e=>setId(e.target.value)}>{parts.map(p=><option key={p.id} value={p.id}>{p.sku} - {p.name}</option>)}</select></Field><Field label="Quantity to add"><Input type="number" required value={qty} onChange={e=>setQty(e.target.value)}/></Field><Field label="Reason"><Input value={reason} onChange={e=>setReason(e.target.value)}/></Field><Button>Update DB Stock</Button></form> }
+function POForm({part,createPO}){ const price=Number(part.sellingPrice||0); const [qty,setQty]=useState(10); const [msg,setMsg]=useState(`Dear Supplier,\n\nPlease process this purchase order for ${part.name}.`); async function save(){ await createPO(part, qty, { quantity:qty, item:part.name, supplier:part.supplier, supplierEmail:part.supplierEmail, amount:price*qty, message:msg }); } return <div><p><b>{part.sku}</b> - {part.name}</p><Field label="Quantity"><Input type="number" value={qty} onChange={e=>setQty(e.target.value)}/></Field><Field label="Amount"><Input readOnly value={money(price*Number(qty||0))}/></Field><Field label="Message"><textarea className="input textarea" value={msg} onChange={e=>setMsg(e.target.value)}/></Field><Button onClick={save}>Create PO Transaction</Button></div> }
