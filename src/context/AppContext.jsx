@@ -66,6 +66,8 @@ export function AppProvider({ children }) {
   const [garageOps, setGarageOps] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [apiStatus, setApiStatus] = useState('offline');
+  const [loadingCount, setLoadingCount] = useState(0);
+  const [appMessage, setAppMessage] = useState(null);
   const [guestTickets, setGuestTickets] = useState(() => JSON.parse(localStorage.getItem('valle-guest-tickets') || '[]'));
   const [fuelConsumptions, setFuelConsumptions] = useState([]);
   const [vehicleOutActivities, setVehicleOutActivities] = useState([]);
@@ -89,7 +91,36 @@ export function AppProvider({ children }) {
     };
   }, []);
 
-  async function safe(label, fn, after) { try { const data = await fn(); setApiStatus('online'); after?.(data); return data; } catch (err) { console.warn(`[API fallback] ${label}:`, err.message); setApiStatus('offline'); return null; } }
+  function notify(message, type = 'success') {
+    setAppMessage({ message, type, at: Date.now() });
+  }
+  function clearAppMessage() {
+    setAppMessage(null);
+  }
+
+  async function safe(label, fn, after) {
+    const isBackgroundLoad = String(label || '').toLowerCase().startsWith('load ');
+    setLoadingCount((count) => count + 1);
+    try {
+      const data = await fn();
+      setApiStatus('online');
+      after?.(data);
+      if (!isBackgroundLoad) {
+        notify(`${label.replace(/^./, c => c.toUpperCase())} completed successfully.`, 'success');
+      }
+      return data;
+    } catch (err) {
+      const message = err?.message || 'Unexpected API error';
+      console.warn(`[API fallback] ${label}:`, message);
+      setApiStatus('offline');
+      if (!isBackgroundLoad) {
+        notify(`${label.replace(/^./, c => c.toUpperCase())} failed: ${message}`, 'error');
+      }
+      return null;
+    } finally {
+      setLoadingCount((count) => Math.max(0, count - 1));
+    }
+  }
   async function refreshAll() { await Promise.all([ safe('load users', () => api.users.list(), data => setUsers(arr(data).map(normalizeUser))), safe('load vehicles', () => api.vehicles.list(), data => setVehicles(arr(data).map(normalizeVehicle))), safe('load inventory', () => api.inventory.list(), data => setInventory(arr(data).map(normalizeInventory))), safe('load assessments', () => api.assessments.list(), data => setAssessments(arr(data).map(normalizeAssessment))), safe('load garage work', () => api.garageOps.list(), data => setGarageOps(arr(data).map(normalizeGarage))), safe('load transactions', () => api.transactions.list(), data => setTransactions(arr(data).map(normalizeTransaction))), safe('load fuel consumptions', () => api.fuelConsumptions.list(), data => setFuelConsumptions(arr(data).map(normalizeFuel))), safe('load vehicle out', () => api.vehicleOut.list(), data => setVehicleOutActivities(arr(data).map(normalizeVehicleOut))), safe('load notifications', () => api.notifications.list(roleToApi[currentUser?.role] || ''), data => setNotifications(arr(data).map(normalizeNotification))), safe('load report analytics', () => api.reports.analytics('?period=monthly'), data => setReportAnalytics(data)) ]); }
   useEffect(() => { if (currentUser && currentUser.role !== 'guest') refreshAll(); }, [currentUser?.id]);
 
@@ -199,6 +230,6 @@ export function AppProvider({ children }) {
   const frequentAlerts = useMemo(() => { const counts={}; garageOps.forEach(g=>{ const key=normPlate(g.vehicle); if(key) counts[key]=(counts[key]||0)+1; }); return Object.entries(counts).filter(([,c])=>c>=3).map(([plate,c])=>`Attention: ${plate} has ${c} garage records and may need deeper inspection.`); }, [garageOps]);
   const searchIndex = useMemo(() => [ ...vehicles.map(item=>({ type:'Vehicle', label:`${item.plate} - ${item.model || item.type}`, path:`/vehicles/${encodeURIComponent(item.plate)}`, keywords:JSON.stringify(item) })), ...vehicleCatalog.slice(0,80).map(item=>({ type:'Vehicle Master', label:`${item.plate} - ${item.model || item.type}`, path:`/vehicles/${encodeURIComponent(item.plate)}`, keywords:JSON.stringify(item) })), ...assessments.map(item=>({ type:'Assessment', label:`${item.id} - ${item.vehicle}`, path:'/assessments', keywords:JSON.stringify(item) })), ...inventory.map(item=>({ type:'Part', label:`${item.sku} - ${item.name}`, path:'/inventory', keywords:JSON.stringify(item) })), ...garageOps.map(item=>({ type:'Garage Work', label:`${item.id} - ${item.vehicle}`, path:'/garage', keywords:JSON.stringify(item) })), ...transactions.map(item=>({ type:'Transaction', label:`${item.id} - ${item.item}`, path:'/transactions', keywords:JSON.stringify(item) })) ], [vehicles, assessments, inventory, garageOps, transactions]);
 
-  const value = { apiStatus, reportAnalytics, currentUser, users, mechanics, addUser, login, guestLogin, logout, can, refreshAll, vehicles, addVehicle, updateVehicle, createVehicleFromTransaction, inventory, setInventory, createInventoryItem, updateInventoryItem, addInventoryStock, fuelConsumptions, addFuelConsumption, vehicleOutActivities, addVehicleOutActivity, assessments, addAssessment, updateAssessment, reopenAssessment, completeAssessment, issuePartsForAssessment, garageOps, addGarageOp, updateGarageOp, transactions, createTransaction, createPO, updateTransaction, notifications:[...frequentAlerts,...notifications], setNotifications, guestTickets, updateGuestTicket, createGuestTicket, takeGuestTicket, vehicleCatalog, findVehicleByPlate, getVehicleHistory, exportVehicleHistory, searchIndex, fileNames:(list)=>Array.from(list||[]).map(f=>f.name).join(', '), nowLocalInput, todayLocal };
+  const value = { apiStatus, appLoading: loadingCount > 0, appMessage, notify, clearAppMessage, reportAnalytics, currentUser, users, mechanics, addUser, login, guestLogin, logout, can, refreshAll, vehicles, addVehicle, updateVehicle, createVehicleFromTransaction, inventory, setInventory, createInventoryItem, updateInventoryItem, addInventoryStock, fuelConsumptions, addFuelConsumption, vehicleOutActivities, addVehicleOutActivity, assessments, addAssessment, updateAssessment, reopenAssessment, completeAssessment, issuePartsForAssessment, garageOps, addGarageOp, updateGarageOp, transactions, createTransaction, createPO, updateTransaction, notifications:[...frequentAlerts,...notifications], setNotifications, guestTickets, updateGuestTicket, createGuestTicket, takeGuestTicket, vehicleCatalog, findVehicleByPlate, getVehicleHistory, exportVehicleHistory, searchIndex, fileNames:(list)=>Array.from(list||[]).map(f=>f.name).join(', '), nowLocalInput, todayLocal };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

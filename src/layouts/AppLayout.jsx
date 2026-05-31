@@ -18,7 +18,7 @@ const nav = [
 ];
 
 export default function AppLayout() {
-  const { currentUser, logout, can, notifications } = useApp();
+  const { currentUser, logout, can, notifications, appLoading, appMessage, clearAppMessage } = useApp();
   const navigate = useNavigate();
   const items = nav.filter(n => can(n.key));
   return <div className="app-shell">
@@ -30,6 +30,13 @@ export default function AppLayout() {
     </aside>
     <main className="main-area">
       <header className="topbar"><div><b>Internal Garage System</b><span>Simple workflow for employees</span></div><SearchBox/><div className="top-actions"><button className="notif" onClick={()=>navigate('/notifications')}>🔔 {notifications.length}</button><button className="user-chip"><b>{currentUser?.name}</b><small>{currentUser?.label}</small></button></div></header>
+      {appLoading && <div className="global-loading-bar" />}
+      {appMessage && (
+        <div className={`app-toast app-toast-${appMessage.type || 'success'}`} role="status">
+          <span>{appMessage.message}</span>
+          <button type="button" onClick={clearAppMessage}>×</button>
+        </div>
+      )}
       <Outlet />
     </main>
   </div>;

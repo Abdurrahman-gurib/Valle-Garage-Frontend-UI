@@ -46,6 +46,7 @@ export function VehicleForm({ onDone, transaction, initialVehicle }) {
     imageUrl: initialVehicle?.imageUrl || ''
   }));
   const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
 const [checklist, setChecklist] = useState(
   initialVehicle?.vehicleChecks || {}
 );
@@ -84,16 +85,22 @@ const [manualMechanic, setManualMechanic] = useState(
   function change(key, value){ setDirty(true); setForm(prev=>({...prev,[key]:value})); }
   async function save(e){
     e.preventDefault();
-    const payload = {
-      ...form,
-      vin: form.vin || '',
-      mechanic: form.mechanic === 'manual' ? manualMechanic : form.mechanic,
-      vehicleChecks: checklist
-    };
-    const saved = initialVehicle?.id
-      ? await updateVehicle(initialVehicle.id, payload)
-      : await addVehicle(payload);
-    onDone?.(saved || { ...payload, id: payload.id || initialVehicle?.id || payload.plate });
+    if (saving) return;
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        vin: form.vin || '',
+        mechanic: form.mechanic === 'manual' ? manualMechanic : form.mechanic,
+        vehicleChecks: checklist
+      };
+      const saved = initialVehicle?.id
+        ? await updateVehicle(initialVehicle.id, payload)
+        : await addVehicle(payload);
+      onDone?.(saved || { ...payload, id: payload.id || initialVehicle?.id || payload.plate });
+    } finally {
+      setSaving(false);
+    }
   }
   const isExternal = form.ownership === 'External';
   return <form onSubmit={save} className="form-grid">
@@ -167,7 +174,7 @@ const [manualMechanic, setManualMechanic] = useState(
 </Field>
     <Field label="Photo Upload"><Input type="file" multiple /></Field>
     <Field label="Notes"><TextArea value={form.notes} onChange={e=>change('notes',e.target.value)}/></Field>
-    <div className="form-actions"><Button>{initialVehicle ? 'Save Vehicle Updates' : 'Save Vehicle'}</Button></div>
+    <div className="form-actions"><Button disabled={saving}>{saving ? 'Saving vehicle...' : (initialVehicle ? 'Save Vehicle Updates' : 'Save Vehicle')}</Button></div>
   </form>;
 }
 
@@ -190,6 +197,7 @@ const [partSearch, setPartSearch] = useState('');
 const [manualPart, setManualPart] = useState('');
 const [qty, setQty] = useState(1);
 const [selectedMechanics, setSelectedMechanics] = useState([]);
+const [savingAssessment, setSavingAssessment] = useState(false);
 const [parts, setParts] = useState([]);
  const partsTotalCost = parts.reduce((sum, p) => {
   return sum + Number(p.lineTotal ?? Number(p.qty || 0) * Number(p.sellingPrice || 0));
@@ -363,6 +371,7 @@ async function addPart() {
 
   async function save(e) {
     e.preventDefault();
+    if (savingAssessment) return;
 
     const selectedVehicle = vehicles.find(v => v.id === vehicleId);
    const payload = {
@@ -390,8 +399,13 @@ async function addPart() {
       return;
     }
 
-    const saved = addAssessment ? await addAssessment(payload) : payload;
-    onDone?.(saved || payload);
+    setSavingAssessment(true);
+    try {
+      const saved = addAssessment ? await addAssessment(payload) : payload;
+      onDone?.(saved || payload);
+    } finally {
+      setSavingAssessment(false);
+    }
   }
 
   return (
@@ -538,7 +552,7 @@ async function addPart() {
       </Field>
 
       <div className="form-actions">
-        <Button>Save Assessment</Button>
+        <Button disabled={savingAssessment}>{savingAssessment ? 'Saving assessment...' : 'Save Assessment'}</Button>
       </div>
     </form>
   );
@@ -553,11 +567,22 @@ export function GarageOpForm({ onDone, transaction }) {
   const [form, setForm] = useState({ vehicleMode:'existing', vehicleId: transactionVehicle?.id || selectedAssessment?.vehicleId || vehicles[0]?.id || '', manualVehicle:'', assessmentId: selectedAssessment?.id || '', transactionId: transaction?.id || '', type: transaction ? 'Build / Assembly' : 'Repair', checkInDateTime: toLocalInputValue(), expectedDeliveryDate: transaction?.expectedDeliveryDate || '', workDone: transaction ? 'Build/assembly started from purchase order.' : '', labor:'1 hr', status: transaction ? 'Build in Progress' : 'Ongoing', paymentStatus: 'Pending', mechanic: currentUser?.name || 'Workshop Team' });
   const selectedVehicle = vehicles.find(v=>v.id===form.vehicleId);
   const [selectedMechanics, setSelectedMechanics] = useState([]);
+  const [savingGarage, setSavingGarage] = useState(false);
   useEffect(()=>{ if(selectedVehicle?.ownership === 'Internal' && form.paymentStatus === 'Pending') setForm(prev=>({...prev,paymentStatus:'None'})); }, [form.vehicleId]);
-  function save(e){ e.preventDefault(); addGarageOp({
-  ...form,
-  mechanicIds: selectedMechanics
-}); onDone?.(); }
+  async function save(e){
+    e.preventDefault();
+    if (savingGarage) return;
+    setSavingGarage(true);
+    try {
+      const saved = await addGarageOp({
+        ...form,
+        mechanicIds: selectedMechanics
+      });
+      onDone?.(saved || form);
+    } finally {
+      setSavingGarage(false);
+    }
+  }
   return <form onSubmit={save} className="form-grid">
     {transaction && <div className="notice form-actions"><b>Admin Request:</b> This garage ticket is linked to {transaction.id} / {transaction.poNumber}. Mechanic can update expected delivery and progress.</div>}
     <Field label="Vehicle Selection"><Select value={form.vehicleMode} onChange={e=>setForm({...form, vehicleMode:e.target.value})}><option value="existing">Select vehicle</option><option value="manual">Input manually</option></Select></Field>
@@ -579,7 +604,7 @@ export function GarageOpForm({ onDone, transaction }) {
     <Field label="Work Done / Work Plan"><TextArea required value={form.workDone} onChange={e=>setForm({...form,workDone:e.target.value})}/></Field>
     <Field label="Labor Hours"><Input value={form.labor} onChange={e=>setForm({...form,labor:e.target.value})}/></Field>
     <Field label="Photo Upload"><Input type="file" multiple /></Field>
-    <div className="form-actions"><Button>Save Garage Work</Button></div>
+    <div className="form-actions"><Button disabled={savingGarage}>{savingGarage ? 'Saving garage work...' : 'Save Garage Work'}</Button></div>
   </form>;
 }
 

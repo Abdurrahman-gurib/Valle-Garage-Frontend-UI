@@ -143,12 +143,20 @@ function CardList({ title, items, onOpen }) {
 function GarageDetail({ op, onClose }) {
   const { updateGarageOp } = useApp();
   const [form, setForm] = useState({ ...op });
+  const [saving, setSaving] = useState(false);
+  const isCompleted = op.status === 'Completed' || op.status === 'Delivered';
   function file(e) {
     setForm({ ...form, invoiceFile: e.target.files?.[0]?.name || "" });
   }
-  function save() {
-    updateGarageOp(op.id, form);
-    onClose();
+  async function save() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await updateGarageOp(op.id, form);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   }
   return (
     <div>
@@ -170,6 +178,7 @@ function GarageDetail({ op, onClose }) {
           <Field label="Status">
             <Select
               value={form.status}
+              disabled={isCompleted}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
             >
               <option>Ongoing</option>
@@ -181,10 +190,16 @@ function GarageDetail({ op, onClose }) {
           </Field>
         </div>
       </div>
+      {isCompleted && (
+        <div className="notice success-notice">
+          This garage work ticket is closed. Fields are locked to protect the completed workshop history.
+        </div>
+      )}
       <div className="form-grid">
         <Field label="Expected Delivery Date">
           <Input
             type="date"
+            disabled={isCompleted}
             value={form.expectedDeliveryDate || ""}
             onChange={(e) =>
               setForm({ ...form, expectedDeliveryDate: e.target.value })
@@ -194,12 +209,14 @@ function GarageDetail({ op, onClose }) {
         <Field label="Labor Hours">
           <Input
             value={form.labor || ""}
+            disabled={isCompleted}
             onChange={(e) => setForm({ ...form, labor: e.target.value })}
           />
         </Field>
         <Field label="Payment Status">
           <Select
             value={form.paymentStatus || "Pending"}
+            disabled={isCompleted}
             onChange={(e) =>
               setForm({ ...form, paymentStatus: e.target.value })
             }
@@ -210,18 +227,19 @@ function GarageDetail({ op, onClose }) {
           </Select>
         </Field>
         <Field label="Attach Invoice">
-          <Input type="file" onChange={file} />
+          <Input type="file" disabled={isCompleted} onChange={file} />
           {form.invoiceFile && <small>{form.invoiceFile}</small>}
         </Field>
         <Field label="Work Done">
           <TextArea
             value={form.workDone || ""}
+            disabled={isCompleted}
             onChange={(e) => setForm({ ...form, workDone: e.target.value })}
           />
         </Field>
       </div>
       <div className="button-row">
-        <Button onClick={save}>Save Updates</Button>
+        <Button onClick={save} disabled={saving || isCompleted}>{isCompleted ? 'Ticket Closed' : saving ? 'Saving updates...' : 'Save Updates'}</Button>
         <Button variant="secondary" onClick={() => window.print()}>
           Print Job Sheet
         </Button>

@@ -125,22 +125,22 @@ export default function Assessments() {
             assessment={modal.item}
             role={role}
             inventory={inventory}
-            onIssue={(note, parts, totalCost) => {
+            onIssue={async (note, parts, totalCost) => {
               if (window.confirm('Confirm issued parts and deduct inventory now?')) {
-                issuePartsForAssessment?.(modal.item.id, note, parts, totalCost);
+                await issuePartsForAssessment?.(modal.item.id, note, parts, totalCost);
                 setModal(null);
               }
             }}
-            onComplete={() => {
-              completeAssessment?.(modal.item.id);
+            onComplete={async () => {
+              await completeAssessment?.(modal.item.id);
               setModal(null);
             }}
-            onReopen={(reason) => {
-              reopenAssessment?.(modal.item.id, reason || 'Reopened');
+            onReopen={async (reason) => {
+              await reopenAssessment?.(modal.item.id, reason || 'Reopened');
               setModal(null);
             }}
-            onUpdate={(updates) => {
-              updateAssessment?.(modal.item.id, updates);
+            onUpdate={async (updates) => {
+              await updateAssessment?.(modal.item.id, updates);
               setModal(null);
             }}
           />
@@ -225,6 +225,9 @@ function AssessmentDetail({
   );
 
   const isStore = role === 'store' || role === 'admin' || role === 'store_keeper';
+  const isCompleted = assessment.status === 'Completed';
+  const isPartsIssued = assessment.status === 'Parts Issued';
+  const canIssueParts = isStore && !isCompleted && !isPartsIssued;
 
   const selectedExtraPart = useMemo(() => {
     return inventory.find((i) => i.id === extraPart);
@@ -289,6 +292,13 @@ function AssessmentDetail({
         </p>
       </Card>
 
+      {(isCompleted || isPartsIssued) && (
+        <Card className="status-flow-card">
+          <h3>{isCompleted ? 'Assessment completed' : 'Parts already issued'}</h3>
+          <p>{isCompleted ? 'This ticket is locked for normal editing. Reopen it if correction is required.' : 'Store Keeper action is complete. The mechanic can now start or continue the garage process.'}</p>
+        </Card>
+      )}
+
       <Card>
         <div className="card-head">
           <h3>Required / Issued Parts</h3>
@@ -329,20 +339,24 @@ function AssessmentDetail({
                 <td>{p.location || '-'}</td>
 
                 <td>
-                  <button
-                    className="part-remove-row"
-                    type="button"
-                    onClick={() => removePart(i)}
-                  >
-                    Remove
-                  </button>
+                  {canIssueParts ? (
+                    <button
+                      className="part-remove-row"
+                      type="button"
+                      onClick={() => removePart(i)}
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <small>Locked</small>
+                  )}
                 </td>
               </tr>
             ))}
           </Table>
         </div>
 
-        {isStore && (
+        {canIssueParts && (
           <div className="inventory-picker">
             <Field label="Select Part from Inventory">
               <Select value={extraPart} onChange={(e) => setExtraPart(e.target.value)}>
@@ -382,7 +396,7 @@ function AssessmentDetail({
         )}
       </Card>
 
-      {isStore && (
+      {canIssueParts && (
         <Card>
           <h3>Store Keeper Action</h3>
 
@@ -418,7 +432,7 @@ function AssessmentDetail({
         </Card>
       )}
 
-      {role === 'mechanic' && (
+      {role === 'mechanic' && !isCompleted && (
         <div className="form-actions">
           <Button variant="secondary" onClick={() => onUpdate({ status: 'In Diagnosis' })}>
             Mark In Diagnosis
