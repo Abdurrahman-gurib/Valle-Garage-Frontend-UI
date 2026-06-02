@@ -14,6 +14,7 @@ const nav = [
   { to:'/vehicle-out', key:'vehicle-out', label:'Vehicles In / Out', icon:'↗' },
   { to:'/transactions', key:'transactions', label:'Transactions', icon:'▤' },
   { to:'/reports', key:'reports', label:'Reports', icon:'▦' },
+  { to:'/audit-trail', key:'audit-trail', label:'Audit Trail', icon:'☷' },
   { to:'/settings', key:'settings', label:'Settings', icon:'⚑' }
 ];
 

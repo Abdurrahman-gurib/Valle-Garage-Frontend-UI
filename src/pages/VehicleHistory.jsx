@@ -4,6 +4,17 @@ import { AssessmentForm, VehicleForm } from '../components/Forms.jsx';
 import { Badge, Button, Card, Modal, PageHeader, Table } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
+
+function cleanVehicleNote(note) {
+  const value = String(note || '').trim();
+  if (!value) return '';
+  const lower = value.toLowerCase();
+  if (lower.startsWith('seeded vehicle from latest friday db')) return '';
+  if (lower.includes('api smoke test vehicle')) return '';
+  if (lower.includes('smoke test vehicle patched')) return '';
+  return value;
+}
+
 function formatMoney(value) {
   return `Rs ${Number(value || 0).toFixed(2)}`;
 }
@@ -520,7 +531,7 @@ export default function VehicleHistory() {
           </p>
 
           <p>
-            <b>Notes:</b> {vehicle.notes || '-'}
+            <b>Notes:</b> {cleanVehicleNote(vehicle.notes) || '-'}
           </p>
 
           <hr />

@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 import { Badge, Modal, PageHeader, Table } from '../components/UI.jsx';
-import { VehicleForm } from '../components/Forms.jsx';
+import { VehicleForm, AssessmentForm } from '../components/Forms.jsx';
 
 export default function Vehicles() {
-  const { vehicles = [], vehicleCatalog = [], can } = useApp();
+  const { vehicles = [], vehicleCatalog = [], can, setLastVehicleForAssessment } = useApp();
   const navigate = useNavigate();
 
   const [modal, setModal] = useState(null);
@@ -75,6 +75,11 @@ export default function Vehicles() {
   const openVehicleHistory = (plate) => {
     if (!plate) return;
     navigate(`/vehicles/${encodeURIComponent(plate)}`);
+  };
+
+  const startAssessmentForVehicle = (vehicle) => {
+    setLastVehicleForAssessment?.(vehicle);
+    setModal({ type: 'assessment', vehicle });
   };
 
   return (
@@ -195,13 +200,22 @@ export default function Vehicles() {
               <td>{v.checkInDateTime?.replace('T', ' ') || '-'}</td>
 
               <td>
-                <button
-                  className="open-btn"
-                  type="button"
-                  onClick={() => openVehicleHistory(plate)}
-                >
-                  Open History
-                </button>
+                <div className="table-action-stack">
+                  <button
+                    className="open-btn"
+                    type="button"
+                    onClick={() => openVehicleHistory(plate)}
+                  >
+                    Open History
+                  </button>
+                  <button
+                    className="open-btn secondary-open-btn"
+                    type="button"
+                    onClick={() => startAssessmentForVehicle(v)}
+                  >
+                    Start Assessment
+                  </button>
+                </div>
               </td>
             </tr>
           );
@@ -210,7 +224,17 @@ export default function Vehicles() {
 
       {modal?.type === 'add' && (
         <Modal title="Add Vehicle" onClose={() => setModal(null)} wide>
-          <VehicleForm onDone={() => setModal(null)} />
+          <VehicleForm onDone={(saved) => { setLastVehicleForAssessment?.(saved); setModal({ type: 'assessment', vehicle: saved }); }} />
+        </Modal>
+      )}
+
+      {modal?.type === 'assessment' && (
+        <Modal title={`Start Assessment - ${modal.vehicle?.plate || 'Vehicle'}`} onClose={() => setModal(null)} wide>
+          <AssessmentForm
+            prefillVehicleId={modal.vehicle?.id || modal.vehicle?.dbId || ''}
+            prefillVehiclePlate={modal.vehicle?.plate || ''}
+            onDone={() => setModal(null)}
+          />
         </Modal>
       )}
     </div>

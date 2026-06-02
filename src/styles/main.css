@@ -1835,3 +1835,364 @@ button:disabled,
   opacity:.58;
   cursor:not-allowed;
 }
+
+/* V11 multiple mechanic chips */
+.multi-mechanics-picker { display: grid; gap: 10px; }
+.selected-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 34px; }
+.selected-chips button { border: 1px solid rgba(46, 4, 78, .18); background: #f4ecfb; color: #2b004b; border-radius: 999px; padding: 7px 10px; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; cursor: pointer; }
+.selected-chips button b { background: #2b004b; color: white; border-radius: 999px; width: 18px; height: 18px; display: inline-grid; place-items: center; line-height: 1; }
+.selected-chips small { color: #75647f; }
+
+
+.form-warning{display:block;margin-top:8px;color:#d11852;font-weight:700;font-size:12px}.mechanic-chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.mechanic-chip-list button{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(45,0,77,.18);background:#f4edfb;border-radius:999px;padding:8px 12px;font-weight:800;color:#2d004d;cursor:pointer}.mechanic-chip-list button b{font-size:16px;color:#d11852}.multi-mechanics-picker select.input{width:100%}
+
+/* ============================================================
+   V13 Advanced Reports + Dashboard Charts UI
+   ============================================================ */
+.report-page .page-header,
+.dashboard-analytics-page .page-header {
+  margin-bottom: 22px;
+}
+.report-hero-card {
+  background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(245,239,228,.9));
+  border: 1px solid rgba(39,0,65,.08);
+  box-shadow: 0 24px 70px rgba(39,0,65,.08);
+}
+.report-filter-head,
+.report-apply-row,
+.report-export-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.report-filter-head h2 { margin-bottom: 4px; }
+.report-export-actions { justify-content: flex-end; }
+.report-apply-row {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(39,0,65,.08);
+}
+.report-apply-row span {
+  color: #6f6579;
+  font-weight: 800;
+  font-size: .9rem;
+}
+.form-grid.six {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+.analytics-grid .metric-card,
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 138px;
+  border: 1px solid rgba(39,0,65,.08);
+  background: linear-gradient(135deg, #fffdf7, #ffffff);
+}
+.metric-card::after,
+.kpi-card::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  background: rgba(37,240,90,.18);
+}
+.metric-card span {
+  display: block;
+  color: #6a5d76;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  font-size: .78rem;
+}
+.metric-card b {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: clamp(1.7rem, 3vw, 2.65rem);
+  color: #270041;
+  font-weight: 1000;
+}
+.metric-card small {
+  color: #7e7389;
+  font-weight: 700;
+}
+.report-chart-grid {
+  align-items: stretch;
+}
+.chart-card {
+  min-height: 330px;
+  border: 1px solid rgba(39,0,65,.08);
+  background: #fffdf7;
+}
+.chart-card .card-head {
+  margin-bottom: 18px;
+}
+.chart-card h2,
+.report-result-card h2 {
+  margin-bottom: 3px;
+}
+.report-bar-row {
+  margin: 13px 0;
+}
+.report-bar-row > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  font-size: .92rem;
+}
+.report-bar-row b {
+  color: #270041;
+  font-weight: 1000;
+}
+.report-bar-row span {
+  color: #5d5266;
+  font-weight: 900;
+}
+.report-bar-row i {
+  display: block;
+  height: 12px;
+  border-radius: 99px;
+  background: #efe7da;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(39,0,65,.08);
+}
+.report-bar-row em {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #25f05a, #6d35ff, #ff3d7f);
+  min-width: 4px;
+}
+.dashboard-bar em {
+  background: linear-gradient(90deg, #6d35ff, #ff3d7f);
+}
+.donut-wrap {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 18px;
+  align-items: center;
+  min-height: 220px;
+}
+.donut {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  box-shadow: 0 12px 35px rgba(39,0,65,.10);
+}
+.donut::after {
+  content: "";
+  position: absolute;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: #fffdf7;
+}
+.donut span {
+  position: relative;
+  z-index: 1;
+  font-size: 1.6rem;
+  font-weight: 1000;
+  color: #270041;
+}
+.donut-legend p {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+  color: #5d5266;
+  font-weight: 800;
+}
+.donut-legend b {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+.donut-legend span {
+  color: #270041;
+  font-weight: 1000;
+}
+.report-result-card {
+  overflow: hidden;
+}
+.report-result-card .table-wrap {
+  margin-top: 10px;
+}
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card.kpi-success .stat-icon,
+.metric-card:nth-child(1)::after { background: rgba(37,240,90,.28); }
+.kpi-card.kpi-warning .stat-icon { background: rgba(246,201,69,.26); }
+.kpi-card.kpi-danger .stat-icon { background: rgba(255,61,127,.18); }
+.kpi-card strong {
+  letter-spacing: -.04em;
+}
+.dashboard-analytics-page .report-chart-grid .chart-card {
+  min-height: 300px;
+}
+@media (max-width: 1100px) {
+  .form-grid.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .donut-wrap { grid-template-columns: 1fr; justify-items: center; }
+}
+@media (max-width: 760px) {
+  .form-grid.six { grid-template-columns: 1fr; }
+  .report-filter-head,
+  .report-apply-row,
+  .report-export-actions { align-items: stretch; }
+  .report-export-actions .btn,
+  .report-apply-row .btn { width: 100%; }
+}
+@media print {
+  .sidebar,
+  .topbar,
+  .report-filters,
+  .report-export-actions,
+  .open-btn,
+  .outline-btn,
+  .btn { display: none !important; }
+  .page { padding: 0 !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+  body { background: white !important; }
+}
+
+
+/* ============================================================
+   V14 Admin Analytics, Reports, Audit + Upload polish
+   Keep the original card style. Remove decorative blobs/corners.
+   ============================================================ */
+.metric-card,
+.analytics-grid .metric-card,
+.chart-card,
+.report-hero-card {
+  background: var(--card) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: 0 16px 45px #2b004812 !important;
+}
+.metric-card::after,
+.kpi-card::after,
+.report-hero-card::after,
+.chart-card::after,
+.card::after { display:none !important; content:none !important; }
+.admin-analytics-page .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.form-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.form-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.no-border { border-top:0 !important; padding-top:0 !important; margin-top:0 !important; }
+.upload-panel { grid-column: 1 / -1; border:1px dashed var(--line); background:#fff; border-radius:20px; padding:16px; display:grid; gap:12px; }
+.upload-panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.upload-panel-head b { display:block; color:var(--purple); }
+.upload-panel-head span { color:var(--muted); font-weight:700; font-size:13px; }
+.upload-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.upload-actions small { color:var(--muted); font-weight:800; }
+.upload-list { display:flex; flex-wrap:wrap; gap:8px; }
+.upload-list a { background:#f3eee6; border-radius:999px; padding:8px 12px; color:var(--purple); font-weight:900; text-decoration:none; }
+.hidden-file { display:none; }
+.report-page .table-wrap table { min-width: 1080px; }
+.report-chart-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:22px; margin-bottom:22px; }
+@media(max-width:1100px){ .admin-analytics-page .stats-grid, .report-chart-grid, .form-grid.four { grid-template-columns:1fr 1fr; } }
+@media(max-width:760px){ .admin-analytics-page .stats-grid, .report-chart-grid, .form-grid.two, .form-grid.four { grid-template-columns:1fr; } }
+
+/* ============================================================
+   V15 Admin Reports + Dashboard Charts
+   - Uses Recharts while keeping the original Vallé card style.
+   - Removes decorative card blobs.
+   - Keeps mechanic dashboard cards in one row on desktop.
+   ============================================================ */
+.metric-card::after,
+.kpi-card::after,
+.card::after,
+.chart-card::after { display:none !important; content:none !important; }
+.same-row-stats { display:grid; gap:18px; margin-bottom:22px; }
+.admin-stats-grid { grid-template-columns:repeat(6,minmax(150px,1fr)) !important; }
+.mechanic-stats-grid { grid-template-columns:repeat(5,minmax(150px,1fr)) !important; }
+.admin-analytics-kpis { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.report-page .admin-analytics-kpis { grid-template-columns:repeat(6,minmax(140px,1fr)); }
+.chart-grid { display:grid; gap:22px; margin-bottom:22px; }
+.two-column-charts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.live-chart-card { min-height:360px; overflow:hidden; }
+.live-chart-card .card-head { margin-bottom:14px; align-items:flex-start; }
+.live-chart-card .card-head h2 { margin:0 0 4px; }
+.live-chart-card .card-head p { margin:0; color:var(--muted); font-weight:700; font-size:13px; }
+.chart-box { height:270px; width:100%; margin-top:8px; }
+.empty-chart { height:100%; display:grid; place-items:center; background:#f3eee6; border-radius:18px; color:var(--muted); font-weight:900; }
+.bar-list-chart { display:grid; gap:12px; height:100%; align-content:start; overflow:auto; padding-right:4px; }
+.bar-list-row { display:grid; gap:7px; }
+.bar-list-meta { display:flex; justify-content:space-between; gap:12px; align-items:center; font-size:13px; }
+.bar-list-meta b { color:var(--purple); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bar-list-meta span { color:var(--muted); font-weight:900; white-space:nowrap; }
+.bar-list-track { height:11px; border-radius:999px; background:#efe7da; overflow:hidden; }
+.bar-list-track em { display:block; height:100%; min-width:5px; border-radius:999px; background:linear-gradient(90deg,var(--green),#6f3cff,var(--pink)); }
+.next-actions-panel { display:grid; gap:12px; height:100%; align-content:start; }
+.next-actions-panel button { background:#f3eee6; border:0; border-radius:16px; padding:14px 16px; text-align:left; color:var(--purple); font-weight:900; display:flex; justify-content:space-between; gap:12px; }
+.report-filter-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:16px; }
+.report-filter-head h2 { margin:0 0 4px; }
+.report-filter-head p { margin:0; color:var(--muted); font-weight:700; }
+.report-export-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.professional-report-filters { margin-bottom:22px; }
+.report-apply-row { display:flex; align-items:end; }
+.report-apply-row .btn { width:100%; }
+.form-grid.six { grid-template-columns:1.4fr 1fr 1fr 1fr 1fr .9fr; }
+.report-result-card { margin-top:22px; }
+.report-result-card .table-wrap { margin-top:12px; }
+.recharts-wrapper text { font-family:Inter,Arial,sans-serif; font-size:12px; fill:var(--muted); }
+.recharts-default-tooltip { border-radius:14px !important; border:1px solid var(--line) !important; box-shadow:0 16px 35px #2b004820 !important; }
+@media(max-width:1280px){
+  .admin-stats-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+  .mechanic-stats-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+  .report-page .admin-analytics-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .form-grid.six { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media(max-width:900px){
+  .two-column-charts { grid-template-columns:1fr; }
+  .admin-analytics-kpis, .report-page .admin-analytics-kpis, .admin-stats-grid, .mechanic-stats-grid { grid-template-columns:1fr 1fr !important; }
+  .report-filter-head { flex-direction:column; }
+}
+@media(max-width:640px){
+  .admin-analytics-kpis, .report-page .admin-analytics-kpis, .admin-stats-grid, .mechanic-stats-grid { grid-template-columns:1fr !important; }
+  .form-grid.six { grid-template-columns:1fr; }
+  .chart-box { height:240px; }
+}
+@media print {
+  .chart-grid { grid-template-columns:1fr 1fr !important; }
+  .chart-box { height:220px !important; }
+}
+
+/* V16 role-aware interactive reports */
+.clickable-chart, .interactive-bar-list .bar-list-row, .interactive-chart-slice { cursor:pointer; }
+.clickable-chart:hover, .interactive-bar-list .bar-list-row:hover { transform:translateY(-2px); box-shadow:0 16px 45px rgba(43,0,72,.16); }
+.interactive-chart-box .recharts-wrapper { cursor:crosshair; }
+.selected-insight{display:inline-block;margin-top:8px;background:#f3eee6;border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-weight:900;color:var(--purple)}
+.role-report-kpis{align-items:stretch}.role-report-charts .chart-card{min-height:340px}.interactive-bar-list button{border:0;background:transparent;width:100%;text-align:left;padding:0}.interactive-bar-list .bar-list-row{display:block;border-radius:14px;padding:8px 10px;transition:.18s}.interactive-bar-list .bar-list-row:hover{background:#f6f0ff}.same-row-stats.mechanic-stats-grid{grid-template-columns:repeat(5,minmax(145px,1fr))!important}.mechanic-stats-grid .metric-card,.mechanic-stats-grid .card{min-height:130px}.report-page .report-result-card .table-wrap{max-height:520px;overflow:auto}@media(max-width:1300px){.same-row-stats.mechanic-stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}@media(max-width:760px){.same-row-stats.mechanic-stats-grid{grid-template-columns:1fr!important}.role-report-charts .chart-card{min-height:300px}}
+
+.advanced-part-picker {
+  align-items: end;
+  grid-template-columns: minmax(260px, 2fr) minmax(100px, .6fr) auto;
+}
+.validate-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 900;
+  color: var(--primary, #2b0047);
+}
+.validate-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #25f05a;
+}
+.muted {
+  color: #71627e;
+  font-weight: 600;
+}

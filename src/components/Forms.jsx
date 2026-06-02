@@ -54,6 +54,18 @@ const [checklist, setChecklist] = useState(
 const [manualMechanic, setManualMechanic] = useState(
   initialVehicle?.manualMechanic || ''
 );
+
+const initialMechanicIds = useMemo(() => {
+  const ids = initialVehicle?.mechanicIds || initialVehicle?.assignedMechanicIds || [];
+  if (Array.isArray(ids) && ids.length) return ids;
+  if (initialVehicle?.mechanic) {
+    const found = mechanics.find(m => m.name === initialVehicle.mechanic || m.email === initialVehicle.mechanic);
+    return found?.id ? [found.id] : [];
+  }
+  return currentUser?.role === 'mechanic' && currentUser?.id ? [currentUser.id] : [];
+}, [initialVehicle, mechanics, currentUser]);
+
+const [selectedMechanics, setSelectedMechanics] = useState(initialMechanicIds);
   const suggestions = useMemo(() => {
     const q = norm(form.plate);
     if(!q || q.length < 1) return [];
@@ -88,10 +100,20 @@ const [manualMechanic, setManualMechanic] = useState(
     if (saving) return;
     setSaving(true);
     try {
+      const selectedMechanicRows = mechanics.filter(m => selectedMechanics.includes(m.id || m.email || m.name));
       const payload = {
         ...form,
+        // Send both frontend aliases and backend canonical fields so the API never receives a blank plate/type.
+        plate: String(form.plate || '').trim().toUpperCase(),
+        plateNumber: String(form.plate || '').trim().toUpperCase(),
+        type: form.type === 'Other' ? form.customType || 'Other' : form.type,
+        vehicleType: form.type === 'Other' ? form.customType || 'Other' : form.type,
+        ownerName: form.owner,
+        currentHourMeter: Number(form.hours || 0),
         vin: form.vin || '',
-        mechanic: form.mechanic === 'manual' ? manualMechanic : form.mechanic,
+        mechanic: selectedMechanicRows.map(m => m.name).join(', '),
+        mechanicIds: selectedMechanics,
+        mechanicNames: selectedMechanicRows.map(m => m.name),
         vehicleChecks: checklist
       };
       const saved = initialVehicle?.id
@@ -155,16 +177,13 @@ const [manualMechanic, setManualMechanic] = useState(
     <Field label="Expected Delivery Date"><Input type="date" value={form.expectedDeliveryDate} onChange={e=>change('expectedDeliveryDate',e.target.value)}/></Field>
     <Field label="Hour Meter"><Input type="number" value={form.hours} onChange={e=>change('hours',e.target.value)}/></Field>
     <Field label="Next Service Hours"><Input type="number" value={form.nextService} onChange={e=>change('nextService',e.target.value)}/></Field>
-    <Field label="Assigned Mechanic">
-      <div className="inline-fields">
-        <Select value={form.mechanic} onChange={e=>change('mechanic',e.target.value)}>
-          <option value="">Choose mechanic</option>
-          {mechanics.map(m=><option key={m.id || m.email} value={m.name}>{m.name}</option>)}
-          <option value="manual">Manual input</option>
-          <option value="Workshop Team">Workshop Team</option>
-        </Select>
-        {form.mechanic==='manual' && <Input placeholder="Type mechanic name manually" value={manualMechanic} onChange={e=>{setManualMechanic(e.target.value); change('manualMechanic',e.target.value)}}/>}
-      </div>
+    <Field label="Assigned Mechanics">
+      <MultipleMechanicsSelect
+        mechanics={mechanics}
+        selectedMechanics={selectedMechanics}
+        setSelectedMechanics={setSelectedMechanics}
+      />
+      <small>Choose one mechanic, then choose another. Selected names appear below. Click × to remove.</small>
     </Field>
     <Field label="Vehicle Checklist">
   <VehicleChecklist
@@ -173,7 +192,7 @@ const [manualMechanic, setManualMechanic] = useState(
   />
 </Field>
     <Field label="Photo Upload"><Input type="file" multiple /></Field>
-    <Field label="Notes"><TextArea value={form.notes} onChange={e=>change('notes',e.target.value)}/></Field>
+    <Field label="Notes"><TextArea placeholder="Add relevant vehicle condition, repair request, delivery or inspection notes only." value={form.notes} onChange={e=>change('notes',e.target.value)}/></Field>
     <div className="form-actions"><Button disabled={saving}>{saving ? 'Saving vehicle...' : (initialVehicle ? 'Save Vehicle Updates' : 'Save Vehicle')}</Button></div>
   </form>;
 }
@@ -185,11 +204,12 @@ export function AssessmentForm({ onDone, prefillVehicleId = '', prefillVehiclePl
   const addAssessment = app?.addAssessment;
   const currentUser = app?.currentUser || { name: 'Mechanic' };
   const mechanics = app?.mechanics || [];
+  const lastVehicleForAssessment = app?.lastVehicleForAssessment;
 
-  const firstVehicleId = vehicles[0]?.id || '';
-  const [vehicleMode, setVehicleMode] = useState(prefillVehicleId || firstVehicleId ? 'existing' : 'manual');
-  const [vehicleId, setVehicleId] = useState(prefillVehicleId || firstVehicleId);
-  const [manualVehicle, setManualVehicle] = useState(prefillVehiclePlate || '');
+  const firstVehicleId = prefillVehicleId || lastVehicleForAssessment?.id || vehicles[0]?.id || '';
+  const [vehicleMode, setVehicleMode] = useState(firstVehicleId ? 'existing' : 'manual');
+  const [vehicleId, setVehicleId] = useState(firstVehicleId);
+  const [manualVehicle, setManualVehicle] = useState(prefillVehiclePlate || lastVehicleForAssessment?.plate || '');
   const [issue, setIssue] = useState('');
   const [conclusion, setConclusion] = useState('');
 const [partId, setPartId] = useState('');
@@ -369,11 +389,13 @@ async function addPart() {
     setParts(prev => prev.filter((_, i) => i !== index));
   }
 
+  const selectedVehicleInfo = vehicles.find(v => v.id === vehicleId || v.dbId === vehicleId);
+
   async function save(e) {
     e.preventDefault();
     if (savingAssessment) return;
 
-    const selectedVehicle = vehicles.find(v => v.id === vehicleId);
+    const selectedVehicle = selectedVehicleInfo || vehicles.find(v => v.id === vehicleId || v.dbId === vehicleId);
    const payload = {
   vehicleMode,
   vehicleId: vehicleMode === 'existing' ? vehicleId : '',
@@ -387,6 +409,7 @@ async function addPart() {
   partsTotalCost,
   mechanic: currentUser?.name || 'Mechanic',
   mechanicIds: selectedMechanics,
+  status: 'Ready for Parts',
 };
 
     if (!payload.vehicle && !payload.vehicleId) {
@@ -432,6 +455,14 @@ async function addPart() {
         <Field label="Vehicle Plate / Ref">
           <Input value={manualVehicle} onChange={e => setManualVehicle(e.target.value)} placeholder="Enter plate number or vehicle reference" />
         </Field>
+      )}
+
+      {vehicleMode === 'existing' && selectedVehicleInfo && (
+        <div className="vehicle-selected-summary form-actions">
+          <b>{selectedVehicleInfo.plate}</b>
+          <span>{selectedVehicleInfo.model || selectedVehicleInfo.type || 'Vehicle'} {selectedVehicleInfo.cc ? `• ${selectedVehicleInfo.cc}` : ''}</span>
+          <small>Status: {selectedVehicleInfo.status || '-'} • Owner: {selectedVehicleInfo.owner || selectedVehicleInfo.companyName || '-'}</small>
+        </div>
       )}
 <Field label="Issue Detected">
         <Input required value={issue} onChange={e => setIssue(e.target.value)} placeholder="Example: Brake issue, engine noise, oil leak..." />
@@ -559,13 +590,14 @@ async function addPart() {
 }
 
 
-export function GarageOpForm({ onDone, transaction }) {
+export function GarageOpForm({ onDone, transaction, assessment }) {
   const { vehicles, assessments, addGarageOp, currentUser, mechanics } = useApp();
   const openAssessments = assessments.filter(a=>a.status!=='Completed').sort((a,b)=> (a.status==='Parts Issued' ? -1 : 0) - (b.status==='Parts Issued' ? -1 : 0));
-  const selectedAssessment = openAssessments[0];
+  const selectedAssessment = assessment || openAssessments[0];
   const transactionVehicle = vehicles.find(v=>v.sourceTransactionId === transaction?.id);
-  const [form, setForm] = useState({ vehicleMode:'existing', vehicleId: transactionVehicle?.id || selectedAssessment?.vehicleId || vehicles[0]?.id || '', manualVehicle:'', assessmentId: selectedAssessment?.id || '', transactionId: transaction?.id || '', type: transaction ? 'Build / Assembly' : 'Repair', checkInDateTime: toLocalInputValue(), expectedDeliveryDate: transaction?.expectedDeliveryDate || '', workDone: transaction ? 'Build/assembly started from purchase order.' : '', labor:'1 hr', status: transaction ? 'Build in Progress' : 'Ongoing', paymentStatus: 'Pending', mechanic: currentUser?.name || 'Workshop Team' });
-  const selectedVehicle = vehicles.find(v=>v.id===form.vehicleId);
+  const assessmentVehicle = vehicles.find(v=>v.id === selectedAssessment?.vehicleId || v.dbId === selectedAssessment?.vehicleId || v.plate === selectedAssessment?.vehicle);
+  const [form, setForm] = useState({ vehicleMode:'existing', vehicleId: transactionVehicle?.id || assessmentVehicle?.id || selectedAssessment?.vehicleId || vehicles[0]?.id || '', manualVehicle:selectedAssessment?.vehicle || '', assessmentId: selectedAssessment?.id || '', transactionId: transaction?.id || '', type: transaction ? 'Build / Assembly' : 'Repair', checkInDateTime: toLocalInputValue(), expectedDeliveryDate: transaction?.expectedDeliveryDate || assessmentVehicle?.expectedDeliveryDate || '', workDone: transaction ? 'Build/assembly started from purchase order.' : selectedAssessment ? `Garage process started from assessment ${selectedAssessment.id}. Issue: ${selectedAssessment.issue || ''}` : '', labor:'1 hr', status: transaction ? 'Build in Progress' : 'Ongoing', paymentStatus: 'Pending', mechanic: currentUser?.name || 'Workshop Team', partsUsed: selectedAssessment?.parts || [] });
+  const selectedVehicle = vehicles.find(v=>v.id===form.vehicleId || v.dbId===form.vehicleId);
   const [selectedMechanics, setSelectedMechanics] = useState([]);
   const [savingGarage, setSavingGarage] = useState(false);
   useEffect(()=>{ if(selectedVehicle?.ownership === 'Internal' && form.paymentStatus === 'Pending') setForm(prev=>({...prev,paymentStatus:'None'})); }, [form.vehicleId]);
@@ -576,6 +608,7 @@ export function GarageOpForm({ onDone, transaction }) {
     try {
       const saved = await addGarageOp({
         ...form,
+        partsUsed: form.partsUsed || selectedAssessment?.parts || [],
         mechanicIds: selectedMechanics
       });
       onDone?.(saved || form);
@@ -585,6 +618,7 @@ export function GarageOpForm({ onDone, transaction }) {
   }
   return <form onSubmit={save} className="form-grid">
     {transaction && <div className="notice form-actions"><b>Admin Request:</b> This garage ticket is linked to {transaction.id} / {transaction.poNumber}. Mechanic can update expected delivery and progress.</div>}
+    {assessment && <div className="notice form-actions"><b>Assessment Ticket:</b> {assessment.id} for {assessment.vehicle}. Store Keeper issued/listed parts can now be used by the mechanic.</div>}
     <Field label="Vehicle Selection"><Select value={form.vehicleMode} onChange={e=>setForm({...form, vehicleMode:e.target.value})}><option value="existing">Select vehicle</option><option value="manual">Input manually</option></Select></Field>
     {form.vehicleMode==='existing' ? <Field label="Vehicle"><Select value={form.vehicleId} onChange={e=>setForm({...form, vehicleId:e.target.value})}>{vehicles.map(v=><option value={v.id} key={v.id}>{v.plate} - {v.model || v.type} - {v.status}</option>)}</Select></Field> : <Field label="Vehicle Plate / Ref"><Input value={form.manualVehicle} onChange={e=>setForm({...form, manualVehicle:e.target.value})}/></Field>}
     <Field label="Assessment Ticket"><Select value={form.assessmentId} onChange={e=>setForm({...form, assessmentId:e.target.value})}><option value="">No assessment / build from PO</option>{openAssessments.map(a=><option value={a.id} key={a.id}>{a.id} - {a.vehicle} - {(a.parts||[]).map(p=>p.name).join(', ')}</option>)}</Select></Field>

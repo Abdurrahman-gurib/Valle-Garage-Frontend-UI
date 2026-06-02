@@ -45,6 +45,7 @@ export const api = {
   me: () => apiRequest('/auth/me'),
   users: {
     list: () => apiRequest('/users'),
+    mechanics: () => apiRequest('/users/mechanics'),
     create: (payload) => apiRequest('/users', { method: 'POST', body: payload }),
     update: (id, payload) => apiRequest(`/users/${id}`, { method: 'PATCH', body: payload })
   },
@@ -102,5 +103,23 @@ export const api = {
   },
   notifications: {
     list: (role) => apiRequest(role ? `/notifications?role=${role}` : '/notifications')
+  },
+  auditTrail: {
+    list: (filters = {}) => { const q = new URLSearchParams(Object.entries(filters).filter(([,v]) => v !== undefined && v !== '')).toString(); return apiRequest(`/audit-trail${q ? `?${q}` : ''}`); }
+  },
+  attachments: {
+    list: (entityType, entityId) => apiRequest(`/attachments?entityType=${encodeURIComponent(entityType || '')}&entityId=${encodeURIComponent(entityId || '')}`),
+    upload: async ({ file, entityType, entityId, category }) => {
+      const token = getToken();
+      const form = new FormData();
+      form.append('file', file);
+      form.append('entityType', entityType || 'GENERAL');
+      form.append('entityId', entityId || '');
+      form.append('category', category || 'GENERAL');
+      const res = await fetch(`${API_URL}/attachments/upload`, { method:'POST', headers: token ? { Authorization:`Bearer ${token}` } : {}, body: form });
+      const data = await res.json().catch(()=>null);
+      if(!res.ok) throw new Error(data?.message || 'Upload failed');
+      return data;
+    }
   }
 };

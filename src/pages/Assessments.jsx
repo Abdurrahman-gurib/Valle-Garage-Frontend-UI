@@ -209,56 +209,80 @@ function AssessmentDetail({
 }) {
   const [issuedNote, setIssuedNote] = useState(assessment.issuedPartsNote || '');
   const [reason, setReason] = useState('');
-  const [extraPart, setExtraPart] = useState(inventory[0]?.id || '');
+  const [partSearch, setPartSearch] = useState('');
   const [extraQty, setExtraQty] = useState(1);
   const [parts, setParts] = useState(() =>
     (assessment.parts || []).map((p) => {
       const sellingPrice = getPartSellingPrice(p);
       const qty = Number(p.qty || 1);
-
       return {
         ...p,
+        qty,
         sellingPrice,
         lineTotal: Number(p.lineTotal ?? qty * sellingPrice),
+        validated: p.validated !== false,
       };
     })
   );
+  const [savingIssue, setSavingIssue] = useState(false);
 
   const isStore = role === 'store' || role === 'admin' || role === 'store_keeper';
   const isCompleted = assessment.status === 'Completed';
   const isPartsIssued = assessment.status === 'Parts Issued';
   const canIssueParts = isStore && !isCompleted && !isPartsIssued;
+  const canReopenTicket = isStore || role === 'admin' || role === 'mechanic';
 
-  const selectedExtraPart = useMemo(() => {
-    return inventory.find((i) => i.id === extraPart);
-  }, [inventory, extraPart]);
+  const matchingParts = useMemo(() => {
+    const q = String(partSearch || '').trim().toLowerCase();
+    if (!q) return inventory.slice(0, 15);
+    return inventory
+      .filter((i) =>
+        [i.sku, i.name, i.part, i.category, i.location]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(q)
+      )
+      .slice(0, 20);
+  }, [inventory, partSearch]);
+
+  const selectedInventoryPart = useMemo(() => {
+    const q = String(partSearch || '').trim().toLowerCase();
+    return inventory.find(
+      (i) =>
+        String(i.id).toLowerCase() === q ||
+        String(i.sku || '').toLowerCase() === q ||
+        String(i.name || '').toLowerCase() === q ||
+        `${i.sku || ''} | ${i.name || ''}`.toLowerCase() === q
+    );
+  }, [inventory, partSearch]);
 
   const partsTotalCost = getPartsTotal(parts);
 
   function addInventoryPart() {
-    const item = inventory.find((i) => i.id === extraPart);
+    const item = selectedInventoryPart || matchingParts[0];
+    if (!item && !partSearch.trim()) return;
 
-    if (!item) return;
-
-    const qty = Number(extraQty || 1);
-    const sellingPrice = getPartSellingPrice(item);
+    const qty = Math.max(1, Number(extraQty || 1));
+    const sellingPrice = item ? getPartSellingPrice(item) : 0;
     const lineTotal = qty * sellingPrice;
 
     setParts((prev) => [
       ...prev,
       {
-        partId: item.id,
-        sku: item.sku,
-        name: item.name,
+        partId: item?.id || 'manual',
+        sku: item?.sku || 'MANUAL',
+        name: item?.name || partSearch.trim(),
         qty,
         sellingPrice,
         lineTotal,
-        stockBefore: item.stock ?? item.currentStock ?? 0,
-        location: item.location,
-        category: item.category,
+        stockBefore: item?.stock ?? item?.currentStock ?? '-',
+        location: item?.location || '-',
+        category: item?.category || '',
+        validated: true,
       },
     ]);
-
+    setPartSearch('');
     setExtraQty(1);
   }
 
@@ -266,30 +290,31 @@ function AssessmentDetail({
     setParts((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function toggleValidated(index) {
+    setParts((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, validated: !p.validated } : p))
+    );
+  }
+
+  async function validateAndIssue() {
+    if (savingIssue) return;
+    setSavingIssue(true);
+    try {
+      await onIssue(issuedNote, parts, partsTotalCost);
+    } finally {
+      setSavingIssue(false);
+    }
+  }
+
   return (
     <div className="detail-stack assessment-detail-clean">
       <Card>
         <h2>{assessment.vehicle || assessment.vehicleId || '-'}</h2>
-
-        <p>
-          <b>Mechanic:</b> {assessment.mechanic || '-'}
-        </p>
-
-        <p>
-          <b>Status:</b> {assessment.status}
-        </p>
-
-        <p>
-          <b>Issue:</b> {assessment.issue}
-        </p>
-
-        <p>
-          <b>Conclusion:</b> {assessment.conclusion || '-'}
-        </p>
-
-        <p>
-          <b>Total Parts Cost:</b> {formatMoney(partsTotalCost)}
-        </p>
+        <p><b>Mechanic:</b> {assessment.mechanic || '-'}</p>
+        <p><b>Status:</b> {assessment.status}</p>
+        <p><b>Issue:</b> {assessment.issue}</p>
+        <p><b>Conclusion:</b> {assessment.conclusion || '-'}</p>
+        <p><b>Total Parts Cost:</b> {formatMoney(partsTotalCost)}</p>
       </Card>
 
       {(isCompleted || isPartsIssued) && (
@@ -305,155 +330,99 @@ function AssessmentDetail({
           <strong>{formatMoney(partsTotalCost)}</strong>
         </div>
 
+        {canIssueParts && (
+          <div className="inventory-picker advanced-part-picker">
+            <Field label="Search / Select Part from Inventory">
+              <Input
+                list="assessment-inventory-parts"
+                value={partSearch}
+                placeholder="Type SKU or part name. Suggestions come from database."
+                onChange={(e) => setPartSearch(e.target.value)}
+              />
+              <datalist id="assessment-inventory-parts">
+                {matchingParts.map((p) => (
+                  <option key={p.id} value={`${p.sku || ''} | ${p.name || ''}`}>
+                    {p.sku || p.id} | {p.name} | Qty: {p.stock ?? p.currentStock ?? 0} | {formatMoney(getPartSellingPrice(p))}
+                  </option>
+                ))}
+              </datalist>
+            </Field>
+
+            <Field label="Quantity">
+              <Input type="number" min="1" value={extraQty} onChange={(e) => setExtraQty(e.target.value)} />
+            </Field>
+
+            <Button type="button" variant="secondary" onClick={addInventoryPart}>Add Part to Ticket</Button>
+          </div>
+        )}
+
         <div className="required-parts-clean-table">
-          <Table
-            headers={[
-              'SKU',
-              'Part',
-              'Available Qty',
-              'Issue Qty',
-              'Unit Price',
-              'Line Total',
-              'Location',
-              'Action',
-            ]}
-          >
+          <Table headers={['Validate', 'SKU', 'Part', 'Available Qty', 'Issue Qty', 'Line Total', 'Location', 'Action']}>
             {parts.map((p, i) => (
               <tr key={`${p.name}-${i}`}>
-                <td>{p.sku || p.partId || '-'}</td>
-
-                <td>
-                  <b>{p.name}</b>
-                </td>
-
-                <td>{p.stockBefore ?? '-'}</td>
-
-                <td>{p.qty}</td>
-
-                <td>{formatMoney(p.sellingPrice)}</td>
-
-                <td>
-                  <b>{formatMoney(getPartLineTotal(p))}</b>
-                </td>
-
-                <td>{p.location || '-'}</td>
-
                 <td>
                   {canIssueParts ? (
-                    <button
-                      className="part-remove-row"
-                      type="button"
-                      onClick={() => removePart(i)}
-                    >
-                      Remove
-                    </button>
+                    <label className="validate-check">
+                      <input type="checkbox" checked={p.validated !== false} onChange={() => toggleValidated(i)} />
+                      <span>✓</span>
+                    </label>
                   ) : (
-                    <small>Locked</small>
+                    <span>{p.validated === false ? 'Not validated' : 'Validated'}</span>
                   )}
+                </td>
+                <td>{p.sku || p.partId || '-'}</td>
+                <td><b>{p.name}</b></td>
+                <td>{p.stockBefore ?? '-'}</td>
+                <td>
+                  {canIssueParts ? (
+                    <Input
+                      type="number"
+                      min="1"
+                      value={p.qty}
+                      onChange={(e) => {
+                        const qty = Math.max(1, Number(e.target.value || 1));
+                        setParts((prev) => prev.map((row, idx) => idx === i ? { ...row, qty, lineTotal: qty * Number(row.sellingPrice || 0) } : row));
+                      }}
+                    />
+                  ) : p.qty}
+                </td>
+                <td><b>{formatMoney(getPartLineTotal(p))}</b></td>
+                <td>{p.location || '-'}</td>
+                <td>
+                  {canIssueParts ? <button className="part-remove-row" type="button" onClick={() => removePart(i)}>Remove</button> : <small>Locked</small>}
                 </td>
               </tr>
             ))}
           </Table>
         </div>
-
-        {canIssueParts && (
-          <div className="inventory-picker">
-            <Field label="Select Part from Inventory">
-              <Select value={extraPart} onChange={(e) => setExtraPart(e.target.value)}>
-                {inventory.map((p) => (
-                  <option value={p.id} key={p.id}>
-                    {p.sku || p.id} | {p.name} | Qty: {p.stock ?? p.currentStock ?? 0} |{' '}
-                    {formatMoney(getPartSellingPrice(p))} | {p.location || 'No location'}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            <Field label="Quantity">
-              <Input
-                type="number"
-                min="1"
-                value={extraQty}
-                onChange={(e) => setExtraQty(e.target.value)}
-              />
-            </Field>
-
-            <div className="storekeeper-price-preview">
-              <span>Selected Unit Price</span>
-              <b>{formatMoney(getPartSellingPrice(selectedExtraPart))}</b>
-              <small>
-                Line Total:{' '}
-                {formatMoney(
-                  Number(extraQty || 1) * getPartSellingPrice(selectedExtraPart)
-                )}
-              </small>
-            </div>
-
-            <Button type="button" variant="secondary" onClick={addInventoryPart}>
-              Add Part
-            </Button>
-          </div>
-        )}
       </Card>
 
       {canIssueParts && (
         <Card>
-          <h3>Store Keeper Action</h3>
-
-          <div className="assessment-cost-summary">
-            <b>Total to Issue:</b> {formatMoney(partsTotalCost)}
-          </div>
-
-          <Field label="Issued Parts Note">
-            <TextArea
-              value={issuedNote}
-              onChange={(e) => setIssuedNote(e.target.value)}
-            />
-          </Field>
-
+          <h3>Store Keeper Validation</h3>
+          <p className="muted">Tick parts to validate. Validated database parts will be deducted from inventory and saved to stock movement.</p>
+          <div className="assessment-cost-summary"><b>Total to Issue:</b> {formatMoney(partsTotalCost)}</div>
+          <Field label="Issued Parts Note"><TextArea value={issuedNote} onChange={(e) => setIssuedNote(e.target.value)} /></Field>
           <div className="form-actions">
-            <Button onClick={() => onIssue(issuedNote, parts, partsTotalCost)}>
-              Issue Parts & Close Store Ticket
-            </Button>
-
-            <Button
-              variant="secondary"
-              onClick={() =>
-                onReopen(
-                  reason ||
-                    prompt('Reason for reopening?') ||
-                    'Reopened by Store Keeper'
-                )
-              }
-            >
-              Re-open Ticket
-            </Button>
+            <Button onClick={validateAndIssue} disabled={savingIssue}>{savingIssue ? 'Validating parts...' : '✓ Validate Parts & Close Store Ticket'}</Button>
+            <Button variant="secondary" onClick={() => onReopen(reason || prompt('Reason for reopening?') || 'Reopened by Store Keeper')}>Re-open Ticket</Button>
           </div>
         </Card>
       )}
 
-      {role === 'mechanic' && !isCompleted && (
-        <div className="form-actions">
-          <Button variant="secondary" onClick={() => onUpdate({ status: 'In Diagnosis' })}>
-            Mark In Diagnosis
-          </Button>
+      {!canIssueParts && canReopenTicket && (
+        <Card>
+          <h3>Reopen Ticket</h3>
+          <Field label="Reason"><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason required for audit trail" /></Field>
+          <Button variant="secondary" onClick={() => onReopen(reason || 'Reopened for correction')}>Reopen Ticket</Button>
+        </Card>
+      )}
 
+      {role === 'mechanic' && !isCompleted && !isPartsIssued && (
+        <div className="form-actions">
+          <Button variant="secondary" onClick={() => onUpdate({ status: 'In Diagnosis' })}>Mark In Diagnosis</Button>
           <Button onClick={onComplete}>Mark Completed</Button>
         </div>
-      )}
-
-      {role === 'mechanic' && assessment.status === 'Completed' && (
-        <Card>
-          <h3>Reopen Assessment</h3>
-
-          <Field label="Reason">
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} />
-          </Field>
-
-          <Button variant="secondary" onClick={() => onReopen(reason)}>
-            Reopen
-          </Button>
-        </Card>
       )}
     </div>
   );

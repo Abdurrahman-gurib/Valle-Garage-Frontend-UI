@@ -13,7 +13,8 @@
     "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "react-router-dom": "latest"
+    "react-router-dom": "latest",
+    "recharts": "^2.15.0"
   },
   "devDependencies": {}
 }

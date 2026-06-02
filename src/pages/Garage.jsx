@@ -14,12 +14,19 @@ import {
 } from "../components/UI.jsx";
 import { useApp } from "../context/AppContext.jsx";
 export default function Garage() {
-  const { garageOps, transactions } = useApp();
+  const { garageOps, transactions, assessments } = useApp();
   const [modal, setModal] = useState(null);
   const buildRequests = transactions.filter(
     (t) =>
       ["External Vehicle Order", "Repair / Service Billing"].includes(t.type) &&
       ["Pending", "In Progress", "Build in Progress"].includes(t.status),
+  );
+  const existingAssessmentIds = new Set(garageOps.map((g) => g.assessmentId).filter(Boolean));
+  const assessmentRequests = (assessments || []).filter(
+    (a) =>
+      ["Parts Issued"].includes(a.status) &&
+      !existingAssessmentIds.has(a.id) &&
+      !existingAssessmentIds.has(a.dbId),
   );
   return (
     <div className="page">
@@ -29,6 +36,14 @@ export default function Garage() {
         action={() => setModal({ type: "new" })}
         actionLabel="Start Process"
       />
+      {assessmentRequests.length > 0 && (
+        <AssessmentTicketList
+          title="Assessment Tickets With Parts Issued - Ready for Garage Work"
+          items={assessmentRequests}
+          onOpen={(a) => setModal({ type: "fromAssessment", item: a })}
+        />
+      )}
+
       {buildRequests.length > 0 && (
         <CardList
           title="Admin Requests / PO Tickets"
@@ -99,6 +114,19 @@ export default function Garage() {
           />
         </Modal>
       )}
+
+      {modal?.type === "fromAssessment" && (
+        <Modal
+          title={`Start Garage Work from ${modal.item.id}`}
+          onClose={() => setModal(null)}
+          wide
+        >
+          <GarageOpForm
+            assessment={modal.item}
+            onDone={() => setModal(null)}
+          />
+        </Modal>
+      )}
       {modal?.type === "view" && (
         <Modal
           title={`${modal.item.id} Details`}
@@ -108,6 +136,29 @@ export default function Garage() {
           <GarageDetail op={modal.item} onClose={() => setModal(null)} />
         </Modal>
       )}
+    </div>
+  );
+}
+function AssessmentTicketList({ title, items, onOpen }) {
+  return (
+    <div className="section-small">
+      <h2>{title}</h2>
+      <div className="card-grid">
+        {items.map((a) => (
+          <div className="card" key={a.id}>
+            <div className="card-head">
+              <h3>{a.id}</h3>
+              <Badge tone={a.status === 'Parts Issued' ? 'success' : 'warning'}>{a.status}</Badge>
+            </div>
+            <p><b>Vehicle:</b> {a.vehicle || '-'}</p>
+            <p><b>Issue:</b> {a.issue || '-'}</p>
+            <p><b>Parts:</b> {(a.parts || []).map((p) => `${p.name} x${p.qty}`).join(', ') || 'No parts listed'}</p>
+            <button className="open-btn" onClick={() => onOpen(a)}>
+              Start Process
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
