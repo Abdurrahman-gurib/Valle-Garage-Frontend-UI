@@ -16,4 +16,14 @@ export function Input(props) { return <input className="input" {...props} />; }
 export function Select(props) { return <select className="input" {...props} />; }
 export function TextArea(props) { return <textarea className="input textarea" {...props} />; }
 export function Modal({ title, children, onClose, wide=false }) { return <div className="modal-backdrop"><div className={`modal ${wide?'modal-wide':''}`}><button className="modal-close" onClick={onClose}>×</button><h2>{title}</h2>{children}</div></div>; }
-export function Table({ headers, children }) { return <div className="table-wrap"><table><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{children}</tbody></table></div>; }
+export function Table({ headers, children }) {
+  const labelledChildren = React.Children.map(children, (row) => {
+    if (!React.isValidElement(row)) return row;
+    const cells = React.Children.map(row.props.children, (cell, index) => {
+      if (!React.isValidElement(cell) || cell.type !== 'td') return cell;
+      return React.cloneElement(cell, { 'data-label': headers[index] || '' });
+    });
+    return React.cloneElement(row, {}, cells);
+  });
+  return <div className="table-wrap table-responsive" role="region" aria-label="Responsive data table" tabIndex={0}><table><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{labelledChildren}</tbody></table></div>;
+}

@@ -1,378 +1,452 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
+  Scatter, ScatterChart, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts';
-import { Badge, Button, Card, Field, Input, PageHeader, Table } from '../components/UI.jsx';
+import { Badge, Button, Card, Field, Input, PageHeader } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 function n(v){ return Number(v || 0); }
-function money(v){ return `MUR ${n(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`; }
-function fmt(v){ return v ? String(v).replace('T',' ').slice(0,16) : '-'; }
-function ym(v){ const d = v ? new Date(v) : new Date(); return Number.isNaN(d.getTime()) ? 'Unknown' : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
-function day(v){ return v ? String(v).slice(0,10) : ''; }
-function hoursBetween(a,b){ const s=a?new Date(a):null; const e=b?new Date(b):new Date(); return s && !Number.isNaN(s.getTime()) ? Math.max(0,(e-s)/36e5) : 0; }
+function money(v){ return `MUR ${n(v).toLocaleString(undefined,{maximumFractionDigits:0})}`; }
+function toDate(v){ const d=v?new Date(v):null; return d && !Number.isNaN(d.getTime()) ? d : null; }
+function dayKey(v){ const d=toDate(v)||new Date(); return d.toISOString().slice(0,10); }
+function ym(v){ const d=toDate(v)||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function weekKey(v){ const d=toDate(v)||new Date(); const first=new Date(d.getFullYear(),0,1); const diff=Math.floor((d-first)/86400000); return `${d.getFullYear()}-W${String(Math.ceil((diff+first.getDay()+1)/7)).padStart(2,'0')}`; }
+function secs(a,b){ const s=toDate(a); const e=toDate(b)||new Date(); return s ? Math.max(0,Math.floor((e-s)/1000)) : 0; }
+function dur(s){ s=Math.max(0,Math.floor(n(s))); const d=Math.floor(s/86400); s%=86400; const h=Math.floor(s/3600); s%=3600; const m=Math.floor(s/60); const sec=s%60; return d ? `${d}d ${h}h ${m}m ${sec}s` : `${h}h ${m}m ${sec}s`; }
+function partQty(p){ return n(p?.qty || p?.quantity || 1); }
+function unitCost(p){ return n(p?.costPrice ?? p?.unitCostPrice ?? p?.inventoryItem?.costPrice ?? 0); }
+function unitSelling(p){ return n(p?.sellingPrice ?? p?.unitSellingPrice ?? p?.price ?? p?.lastPrice ?? p?.inventoryItem?.sellingPrice ?? 0); }
+function partsCostTotal(p){ return n(p?.lineCostTotal ?? p?.costTotal) || partQty(p) * unitCost(p); }
+function partsChargedTotal(p){ return n(p?.lineSellingTotal ?? p?.sellingTotal ?? p?.lineTotal) || partQty(p) * unitSelling(p); }
+function partMargin(p){ return n(p?.margin) || partsChargedTotal(p) - partsCostTotal(p); }
+function partCost(p){ return partsCostTotal(p); }
+function group(rows,key,val=()=>1){ return Object.entries((rows||[]).reduce((a,r)=>{ const k=key(r)||'Unknown'; a[k]=(a[k]||0)+val(r); return a; },{})).map(([label,value])=>({label,value:Number(value||0)})).sort((a,b)=>b.value-a.value); }
+function chrono(rows,key,val=()=>1){ return group(rows,key,val).sort((a,b)=>String(a.label).localeCompare(String(b.label))); }
 function csv(rows){ return rows.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n'); }
 function download(name, text, type='text/csv;charset=utf-8'){ const blob=new Blob([text],{type}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
 function printPdf(title){ const old=document.title; document.title=title; window.print(); setTimeout(()=>{document.title=old;},300); }
+
+function formatFullDateTime(value){
+  const d = toDate(value);
+  if(!d) return value || '-';
+  const pad = x => String(x).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function dateParts(value){
+  const d = toDate(value);
+  if(!d) return { date:'-', time:'-', day:'-', month:'-', year:'-' };
+  const pad = x => String(x).padStart(2,'0');
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
+    day: pad(d.getDate()),
+    month: `${d.getFullYear()}-${pad(d.getMonth()+1)}`,
+    year: `${d.getFullYear()}`,
+  };
+}
+
+async function exportProfessionalXlsx({ fileName, title, reportType, filters, headers, rows, summaryRows = [], currentUser = {}, sourcePage = 'Executive Reports & System Tracking' }){
+  const XLSX = await import('xlsx');
+  const generatedAt = formatFullDateTime(new Date());
+  const readableReportType = String(reportType || '').replaceAll('-', ' ').toUpperCase();
+  const meta = [
+    ['VALLÉ GARAGE OPERATIONS'],
+    [title || `${readableReportType} Extract`],
+    [],
+    ['Source Page', sourcePage],
+    ['Exported From', 'Live database records displayed in Reports module'],
+    ['Exported By', currentUser?.name || '-'],
+    ['User Email', currentUser?.email || '-'],
+    ['User Role', currentUser?.role || '-'],
+    ['Exported Date/Time', generatedAt],
+    ['Report Name', readableReportType],
+    ['Selected Period', periodLabel(filters)],
+    ['Manual From', filters.from || '-'],
+    ['Manual To', filters.to || '-'],
+    ['Manual Month', filters.month || '-'],
+    ['Manual Year', filters.year || '-'],
+    ['Plate Search', filters.plate || '-'],
+    ['Rows Exported', rows?.length || 0],
+    [],
+    ['Summary'],
+    ...summaryRows,
+    [],
+    headers,
+    ...rows,
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet(meta);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Valle Report');
+
+  const range = XLSX.utils.decode_range(worksheet['!ref']);
+  worksheet['!cols'] = headers.map((h, i) => ({ wch: Math.max(14, String(h).length + 4, ...rows.map(r => String(r[i] ?? '').length + 2).slice(0, 250)) }));
+  worksheet['!cols'][0] = { wch: 22 };
+  worksheet['!cols'][1] = { wch: 14 };
+  worksheet['!cols'][2] = { wch: 14 };
+  worksheet['!cols'][3] = { wch: 12 };
+  worksheet['!freeze'] = { xSplit: 0, ySplit: 14 };
+
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const cell = worksheet[XLSX.utils.encode_cell({ r: 0, c: C })];
+    if (cell) cell.s = { font: { bold: true, color: { rgb: '24F66F' } }, fill: { fgColor: { rgb: '2B0048' } } };
+  }
+
+  XLSX.writeFile(workbook, `${fileName}.xlsx`);
+}
+function plate(v){
+  const raw = v?.vehicle || v?.plate || v?.vehiclePlate || v?.vehicle?.plateNumber || '';
+  const clean = String(raw || '').trim();
+  return clean || 'Unknown';
+}
+function localStartOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function localEndOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999); }
+function daysAgo(days){ const d = new Date(); d.setDate(d.getDate() - days); return d; }
 function periodOk(value, f){
-  if(!value) return true;
-  const d = new Date(value);
-  if(Number.isNaN(d.getTime())) return true;
+  const d = toDate(value);
+  if(!d) return false;
+
   const now = new Date();
   let start = null;
   let end = null;
-  if(f.period === 'today') start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if(f.period === 'week') start = new Date(now.getTime() - 7 * 86400000);
-  if(f.period === 'month') start = new Date(now.getFullYear(), now.getMonth(), 1);
-  if(f.period === 'year') start = new Date(now.getFullYear(), 0, 1);
-  if(f.from) start = new Date(`${f.from}T00:00:00`);
-  if(f.to) end = new Date(`${f.to}T23:59:59`);
+
+  if(f.period === 'today'){
+    start = localStartOfDay(now);
+    end = localEndOfDay(now);
+  }
+
+  if(f.period === 'week'){
+    start = localStartOfDay(daysAgo(6));
+    end = localEndOfDay(now);
+  }
+
+  if(f.period === 'month'){
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
+
+  if(f.period === 'year'){
+    start = new Date(now.getFullYear(), 0, 1);
+    end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+  }
+
+  if(f.period === 'manual-date'){
+    start = f.from ? new Date(`${f.from}T00:00:00`) : null;
+    end = f.to ? new Date(`${f.to}T23:59:59`) : null;
+  }
+
+  if(f.period === 'manual-month'){
+    const source = f.month || f.from?.slice(0, 7);
+    if(source){
+      const [year, month] = source.split('-').map(Number);
+      start = new Date(year, month - 1, 1);
+      end = new Date(year, month, 0, 23, 59, 59, 999);
+    }
+  }
+
+  if(f.period === 'manual-year'){
+    const year = Number(f.year || new Date().getFullYear());
+    if(year){
+      start = new Date(year, 0, 1);
+      end = new Date(year, 11, 31, 23, 59, 59, 999);
+    }
+  }
+
   return (!start || d >= start) && (!end || d <= end);
 }
-function group(rows, key, val=()=>1){
-  return Object.entries(rows.reduce((a,r)=>{ const k=key(r)||'Unknown'; a[k]=(a[k]||0)+val(r); return a; },{}))
-    .map(([label,value])=>({label,value:Number(value||0)}))
-    .sort((a,b)=>b.value-a.value);
+function periodLabel(filters){
+  if(filters.period === 'today') return 'Today only';
+  if(filters.period === 'week') return 'Last 7 days';
+  if(filters.period === 'month') return 'Current month';
+  if(filters.period === 'year') return 'Current year, all months';
+  if(filters.period === 'manual-date') return `Manual date: ${filters.from || 'start'} to ${filters.to || 'end'}`;
+  if(filters.period === 'manual-month') return `Manual month: ${filters.month || filters.from?.slice(0,7) || '-'}`;
+  if(filters.period === 'manual-year') return `Manual year: ${filters.year || '-'}`;
+  return filters.period || '-';
 }
-function partCost(p){ return n(p?.lineTotal) || n(p?.qty || p?.quantity || 1) * n(p?.sellingPrice || p?.price || p?.lastPrice || 0); }
-function partName(p){ return p?.name || p?.partName || p?.part || p?.sku || 'Manual Part'; }
-function shortRows(rows, limit=10){ return (rows || []).slice(0,limit).map(r=>({ ...r, short: String(r.label).length > 12 ? `${String(r.label).slice(0,12)}…` : r.label })); }
+function chartKeyForPeriod(filters, value){
+  if(filters.period === 'year' || filters.period === 'manual-year') return ym(value);
+  if(filters.period === 'manual-month' || filters.period === 'month' || filters.period === 'week' || filters.period === 'today' || filters.period === 'manual-date') return dayKey(value);
+  return dayKey(value);
+}
+function chartPeriodText(filters){
+  if(filters.period === 'year' || filters.period === 'manual-year') return 'by month';
+  return 'by date';
+}
+const COLORS=['#24f66f','#6f3cff','#ff315f','#ffd84d','#2bb7ff','#2b0048','#ff8b00'];
 
-const COLORS = ['#24f66f', '#6f3cff', '#ff315f', '#ffd84d', '#2b0048', '#2bb7ff'];
+function Kpi({label,value,note,onClick}){ return <Card onClick={onClick} className={`metric-card ${onClick?'clickable-card':''}`}><span>{label}</span><b>{value}</b><small>{note}</small></Card>; }
+function ChartCard({title,subtitle,badge,children,onExport}){ return <Card className="chart-card report-chart-card"><div className="card-head"><div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div><div className="chart-card-tools">{badge&&<Badge>{badge}</Badge>}{onExport&&<Button variant="secondary" onClick={onExport}>Export XLSX</Button>}</div></div><div className="chart-box">{children}</div></Card>; }
+function Empty(){ return <div className="empty-chart"><span>No data for selected filter.</span></div>; }
+function BarList({rows,suffix='',cost=false,onSelect}){ const max=Math.max(...(rows||[]).map(r=>n(r.value)),1); if(!rows?.length) return <Empty/>; return <div className="bar-list-chart">{rows.map((r,i)=><button type="button" key={`${r.label}-${i}`} className="bar-list-row" onClick={()=>onSelect?.(r.label)}><div className="bar-list-meta"><b>{r.label}</b><span>{r.displayValue || r.durationLabel || (cost?money(r.value):`${n(r.value).toLocaleString()}${suffix}`)}</span></div>{r.subLabel && <small className="bar-list-sub">{r.subLabel}</small>}<div className="bar-list-track"><em style={{width:`${Math.min(100,n(r.value)/max*100)}%`}}/></div></button>)}</div>; }
 
-function Kpi({ label, value, note, tone='neutral', onClick }){
-  return <Card onClick={onClick} className={`metric-card report-kpi kpi-${tone} ${onClick ? 'clickable-chart' : ''}`}>
-    <span>{label}</span>
-    <b>{value}</b>
-    <small>{note}</small>
-  </Card>;
-}
-function ChartCard({ title, subtitle, badge, tone='neutral', children }){
-  return <Card className="chart-card live-chart-card">
-    <div className="card-head"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>{badge && <Badge tone={tone}>{badge}</Badge>}</div>
-    <div className="chart-box interactive-chart-box">{children}</div>
-  </Card>;
-}
-function EmptyChart({ text='No data for selected filters.' }){ return <div className="empty-chart"><span>{text}</span></div>; }
-function BarList({ rows, suffix='', cost=false, onSelect }){
-  const max = Math.max(...rows.map(x=>n(x.value)), 1);
-  return <div className="bar-list-chart interactive-bar-list">{rows.map((x,i)=><button key={`${x.label}-${i}`} type="button" className="bar-list-row" onClick={()=>onSelect?.(x.label)} title={`Click to filter by ${x.label}`}>
-    <div className="bar-list-meta"><b>{x.label}</b><span>{cost ? money(x.value) : `${n(x.value).toLocaleString()}${suffix}`}</span></div>
-    <div className="bar-list-track"><em style={{width:`${Math.min(100,n(x.value)/max*100)}%`}} /></div>
-  </button>)}</div>;
-}
-function Donut({ rows, onSelect }){
-  if(!rows.length) return <EmptyChart />;
-  return <ResponsiveContainer width="100%" height="100%">
-    <PieChart>
-      <Pie data={rows} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} paddingAngle={3} onClick={(d)=>onSelect?.(d?.label)}>
-        {rows.map((_, index)=><Cell key={index} fill={COLORS[index % COLORS.length]} className="interactive-chart-slice" />)}
-      </Pie>
-      <Tooltip />
-    </PieChart>
-  </ResponsiveContainer>;
+function ChartTooltip({active,payload,label,valueLabel='Value',suffix='',xAxisName='X Axis',yAxisName}) {
+  if(!active || !payload?.length) return null;
+  const item = payload[0]?.payload || {};
+  const raw = payload[0]?.value;
+  const isMoney = String(valueLabel).toLowerCase().includes('cost') || String(valueLabel).toLowerCase().includes('mur') || String(valueLabel).toLowerCase().includes('amount');
+  return <div className="analytics-tooltip">
+    <b>{item.plate || item.label || label}</b>
+    <span>{xAxisName}: {item.label || label}</span>
+    <span>{yAxisName || valueLabel}: {item.displayValue || (isMoney ? money(raw) : `${n(raw).toLocaleString()}${suffix}`)}</span>
+    {item.ticketCountLabel && <span>{item.ticketCountLabel}</span>}
+    {item.durationLabel && <span>Duration: {item.durationLabel}</span>}
+    {item.outTimesLabel && <span>Out time(s): {item.outTimesLabel}</span>}
+    {item.statusLabel && <span>Status: {item.statusLabel}</span>}
+  </div>;
 }
 
 export default function Reports(){
-  const {
-    currentUser,
-    inventory,
-    assessments,
-    garageOps,
-    fuelConsumptions,
-    vehicleOutActivities,
-    mechanics,
-    notify,
-  } = useApp();
-  const role = currentUser?.role || '';
-  const isAdmin = role === 'admin';
-  const isFuelOnly = role === 'fuel';
-  const isVehicleOnly = role === 'vehicle_manager';
-  const isStore = role === 'store';
+  const { currentUser, inventory, assessments, garageOps, fuelConsumptions, vehicleOutActivities, refreshAll } = useApp();
+  const role=currentUser?.role;
+  const [filters,setFilters]=useState({ reportType:'all', period:'today', from:'', to:'', month:'', year:String(new Date().getFullYear()), plate:'' });
+  const [selected,setSelected]=useState('');
+  const [liveNow,setLiveNow]=useState(()=>Date.now());
+  useEffect(()=>{ const timer=setInterval(()=>setLiveNow(Date.now()),1000); return ()=>clearInterval(timer); },[]);
+  const isAdmin=role==='admin', isFuel=role==='fuel', isVehicle=role==='vehicle_manager', isStore=role==='store';
 
-  const reportOptions = useMemo(()=>{
-    if(isFuelOnly) return [{value:'fuel', label:'Fuel Consumption'}];
-    if(isVehicleOnly) return [{value:'vehicle', label:'Vehicle In / Out'}];
-    if(isStore) return [{value:'all', label:'All Store Reports'}, {value:'assessment', label:'Assessments'}, {value:'low', label:'Low Stock'}, {value:'parts', label:'Parts Issued'}];
-    return [
-      {value:'all', label:'All Reports'},
-      {value:'fuel', label:'Fuel Consumption'},
-      {value:'vehicle', label:'Vehicle In / Out'},
-      {value:'garage', label:'Garage Work'},
-      {value:'assessment', label:'Assessment'},
-      {value:'low', label:'Low Stock'},
-      {value:'parts', label:'Parts Issued'},
+  const data=useMemo(()=>{
+    const plateQ=String(filters.plate||selected||'').toLowerCase();
+    const fuel=fuelConsumptions.filter(f=>periodOk(f.recordedAt,filters)&&(!plateQ||String(f.vehicle).toLowerCase().includes(plateQ)));
+    const out=vehicleOutActivities.filter(o=>periodOk(o.startDateTime,filters)&&(!plateQ||String(o.vehicle).toLowerCase().includes(plateQ)));
+    const ass=assessments.filter(a=>periodOk(a.createdAt,filters)&&(!plateQ||String(a.vehicle).toLowerCase().includes(plateQ)));
+    const ops=garageOps.filter(g=>periodOk(g.start||g.createdAt,filters)&&(!plateQ||String(g.vehicle).toLowerCase().includes(plateQ)));
+    const issuedParts=ass.flatMap(a=>(a.parts||[]).map(p=>({...p, vehicle:a.vehicle, ticket:a.id, date:a.createdAt, source:'Issued / Deducted from Store'})));
+    const usedParts=[];
+    const partsForCost=issuedParts;
+    return { fuel,out,ass,ops,issuedParts,usedParts,partsForCost };
+  },[fuelConsumptions,vehicleOutActivities,assessments,garageOps,filters,selected]);
+
+  const vehicleCostRows = useMemo(() => {
+    return data.ass.map((a) => {
+      const linkedGarage = data.ops.filter((g) =>
+        g.assessmentId && (g.assessmentId === a.dbId || g.assessmentId === a.id)
+      );
+      const garageParts = linkedGarage.flatMap((g) =>
+        (g.partsUsed || []).map((p) => ({ ...p, date: g.checkInDateTime || g.start || g.createdAt, source: 'Garage Parts' }))
+      );
+      const assessmentParts = (a.parts || []).map((p) => ({ ...p, date: a.createdAt, source: 'Assessment Parts' }));
+      const finalParts = garageParts.length ? garageParts : assessmentParts;
+      const totalCost = finalParts.reduce((s, p) => s + partsCostTotal(p), 0);
+      const totalCharged = finalParts.reduce((s, p) => s + partsChargedTotal(p), 0);
+      const totalMargin = totalCharged - totalCost;
+      return {
+        date: a.createdAt,
+        vehicle: a.vehicle,
+        assessmentId: a.id,
+        status: a.status,
+        mechanic: a.mechanic,
+        repairDone: linkedGarage.map((g) => g.workDone || g.type || g.status).filter(Boolean).join('; ') || a.conclusion || a.issue || '',
+        parts: finalParts,
+        partsText: finalParts.map((p) => `${p.name || p.partName || 'Part'} x${p.qty || p.quantity || 1}`).join('; '),
+        totalCost,
+        totalCharged,
+        totalMargin,
+        costPerTicket: totalCost,
+        chargedPerTicket: totalCharged,
+        marginPerTicket: totalMargin,
+        costPerGarageVisit: totalCost,
+        chargedPerGarageVisit: totalCharged,
+        marginPerGarageVisit: totalMargin,
+        garageVisitCount: 1,
+        garageCount: linkedGarage.length,
+      };
+    });
+  }, [data.ass, data.ops]);
+
+  const analytics=useMemo(()=>({
+    fuelByPeriod: chrono(data.fuel,f=>chartKeyForPeriod(filters, f.recordedAt),f=>n(f.fuelLitres)),
+    fuelByWeek: chrono(data.fuel,f=>weekKey(f.recordedAt),f=>n(f.fuelLitres)),
+    fuelByMonth: chrono(data.fuel,f=>ym(f.recordedAt),f=>n(f.fuelLitres)),
+    fuelByVehicle: group(data.fuel,f=>f.vehicle,f=>n(f.fuelLitres)).slice(0,15),
+    fuelByVehicleDay: group(data.fuel,f=>`${dayKey(f.recordedAt)} • ${f.vehicle}`,f=>n(f.fuelLitres)).slice(0,20),
+    outByPeriod: chrono(data.out,o=>chartKeyForPeriod(filters, o.startDateTime)),
+    outByWeek: chrono(data.out,o=>weekKey(o.startDateTime)),
+    outByMonth: chrono(data.out,o=>ym(o.startDateTime)),
+    outByVehicle: group(data.out,o=>o.vehicle).slice(0,15),
+    outVehicleDots: group(data.out,o=>o.vehicle).slice(0,15).map((row,index)=>{ const trips=data.out.filter(o=>(o.vehicle||'Unknown')===row.label); return { ...row, x:index+1, y:row.value, plate:row.label, displayValue:`${row.value} ticket(s)`, ticketCountLabel:`Tickets: ${row.value}`, outTimesLabel:trips.map(o=>formatFullDateTime(o.startDateTime)).join(', '), statusLabel:trips.some(o=>!o.endDateTime)?'Currently out / open':'Returned / closed' }; }),
+    outDuration: group(data.out,o=>o.vehicle,o=>secs(o.startDateTime,o.endDateTime)).slice(0,15).map(row=>({ ...row, displayValue:dur(row.value), durationLabel:dur(row.value), subLabel:'Hours, minutes and seconds - not raw seconds' })),
+    repairsByPeriod: chrono(data.ops,g=>chartKeyForPeriod(filters, g.start||g.createdAt)),
+    repairsByWeek: chrono(data.ops,g=>weekKey(g.start||g.createdAt)),
+    repairsByMonth: chrono(data.ops,g=>ym(g.start||g.createdAt)),
+    garageVisitsByPeriod: chrono(data.ass,a=>chartKeyForPeriod(filters, a.createdAt)),
+    repairCostByDay: chrono(data.partsForCost,p=>dayKey(p.date),partsCostTotal),
+    repairCostByWeek: chrono(data.partsForCost,p=>weekKey(p.date),partsCostTotal),
+    repairCostByMonth: chrono(data.partsForCost,p=>ym(p.date),partsCostTotal),
+    repairCostByVehicle: group(data.partsForCost,p=>p.vehicle,partsCostTotal).slice(0,15),
+    partsChargedByVehicle: group(data.partsForCost,p=>p.vehicle,partsChargedTotal).slice(0,15),
+    partsMarginByVehicle: group(data.partsForCost,p=>p.vehicle,partMargin).slice(0,15),
+    vehicleCostByPeriod: chrono(vehicleCostRows, r=>chartKeyForPeriod(filters, r.date), r=>r.totalCost),
+    vehicleChargedByPeriod: chrono(vehicleCostRows, r=>chartKeyForPeriod(filters, r.date), r=>r.totalCharged),
+    vehicleMarginByPeriod: chrono(vehicleCostRows, r=>chartKeyForPeriod(filters, r.date), r=>r.totalMargin),
+    vehicleCostByWeek: chrono(vehicleCostRows, r=>weekKey(r.date), r=>r.totalCost),
+    vehicleCostByYear: chrono(vehicleCostRows, r=>String(toDate(r.date)?.getFullYear() || 'Unknown'), r=>r.totalCost),
+    vehicleCostByVehicle: group(vehicleCostRows, r=>r.vehicle, r=>r.totalCost).slice(0,20),
+    vehicleChargedByVehicle: group(vehicleCostRows, r=>r.vehicle, r=>r.totalCharged).slice(0,20),
+    vehicleMarginByVehicle: group(vehicleCostRows, r=>r.vehicle, r=>r.totalMargin).slice(0,20),
+    partsIssued: group(data.issuedParts,p=>p.name || p.sku || 'Part',p=>n(p.qty||1)).slice(0,10),
+    partsUsed: [],
+    lowStock: inventory.filter(i=>n(i.stock)<=n(i.reorderLevel)).slice(0,20)
+  }),[data,inventory,vehicleCostRows,filters,liveNow]);
+
+  const allowedReports = isFuel ? ['fuel'] : isVehicle ? ['vehicle-out'] : isStore ? ['parts','low-stock','garage','vehicle-cost','cost','all'] : ['all','fuel','vehicle-out','garage','vehicle-cost','parts','cost','mechanics','low-stock'];
+  const effectiveReport = allowedReports.includes(filters.reportType) ? filters.reportType : allowedReports[0];
+
+  function reportHeaders(){
+    if(effectiveReport==='fuel') return ['Stored Date/Time','Date','Time','Month','Year','Vehicle Plate','Fuel Type','Quantity (L)','Meter Type','Meter Reading','Recorded By','Notes'];
+    if(effectiveReport==='vehicle-out') return ['Out Date/Time','Out Date','Out Time','Out Month','Out Year','In Date/Time','Vehicle Plate','Invoice','Guide','Activity','Duration (Days/Hrs/Mins/Secs)','Destination','Notes'];
+    if(effectiveReport==='parts') return ['Stored Date/Time','Date','Time','Month','Year','Vehicle Plate','Ticket','Part Name','Quantity','Unit Cost Price','Unit Selling Price','Cost Price Total','Selling Price Total','Margin','Issued By','Source'];
+    if(effectiveReport==='low-stock') return ['Extracted Date/Time','SKU','Part','Stock','Reorder Level','Supplier','Category','Location'];
+    if(effectiveReport==='mechanics') return ['Stored Date/Time','Date','Time','Month','Year','Vehicle Plate','Ticket','Status','Mechanic','Issue/Work','Notes'];
+    if(effectiveReport==='vehicle-cost') return ['Stored Date/Time','Date','Time','Month','Year','Vehicle Plate','Garage Visit Count','Assessment Ticket','Repair Done','Parts Given','Parts Cost','Parts Charged','Margin','Mechanic','Status'];
+    return ['Stored Date/Time','Date','Time','Month','Year','Vehicle Plate','Ticket','Status','Garage Visit','Parts Cost','Parts Charged','Margin','Mechanic','Notes'];
+  }
+
+  const tableRows = useMemo(()=>{
+    if(effectiveReport==='fuel') return data.fuel.map(f=>{
+      const dp = dateParts(f.recordedAt);
+      return [formatFullDateTime(f.recordedAt), dp.date, dp.time, dp.month, dp.year, f.vehicle, f.fuelType, f.fuelLitres, f.meterType, f.meterReading, f.recordedBy, f.notes || ''];
+    });
+    if(effectiveReport==='vehicle-out') return data.out.map(o=>{
+      const dp = dateParts(o.startDateTime);
+      return [formatFullDateTime(o.startDateTime), dp.date, dp.time, dp.month, dp.year, o.endDateTime ? formatFullDateTime(o.endDateTime) : 'Currently Out', o.vehicle, o.invoiceNumber, o.guideName, o.quadActivity, dur(secs(o.startDateTime,o.endDateTime)), o.destination || '', o.notes || ''];
+    });
+    if(effectiveReport==='parts') return data.issuedParts.map(p=>{
+      const dp = dateParts(p.issuedAt || p.date);
+      return [formatFullDateTime(p.issuedAt || p.date), dp.date, dp.time, dp.month, dp.year, p.vehicle, p.ticket, p.name, partQty(p), unitCost(p), unitSelling(p), partsCostTotal(p), partsChargedTotal(p), partMargin(p), p.issuedBy || '-', p.source];
+    });
+    if(effectiveReport==='low-stock') return analytics.lowStock.map(i=>[formatFullDateTime(new Date()), i.sku, i.name, i.stock, i.reorderLevel, i.supplierName||'', i.category || '', i.location || '']);
+    if(effectiveReport==='vehicle-cost') return vehicleCostRows.map(r=>{ const dp = dateParts(r.date); return [formatFullDateTime(r.date), dp.date, dp.time, dp.month, dp.year, r.vehicle, r.garageVisitCount, r.assessmentId, r.repairDone, r.partsText, r.totalCost, r.totalCharged, r.totalMargin, r.mechanic, r.status]; });
+    if(effectiveReport==='mechanics') return data.ops.map(g=>{
+      const dp = dateParts(g.start || g.createdAt);
+      return [formatFullDateTime(g.start || g.createdAt), dp.date, dp.time, dp.month, dp.year, g.vehicle, g.id, g.status, g.mechanic, g.type || g.processType || '', g.notes || ''];
+    });
+    return data.ass.map(a=>{
+      const dp = dateParts(a.createdAt);
+      const costRow = vehicleCostRows.find(r => r.assessmentId === a.id);
+      const cost = Number(costRow?.totalCost || 0);
+      const charged = Number(costRow?.totalCharged || 0);
+      const margin = Number(costRow?.totalMargin || 0);
+      return [formatFullDateTime(a.createdAt), dp.date, dp.time, dp.month, dp.year, a.vehicle, a.id, a.status, '1 visit', cost, charged, margin, a.mechanic || '', a.issue || a.issuesDetected || ''];
+    });
+  },[effectiveReport,data,analytics.lowStock,vehicleCostRows]);
+
+  async function exportRows(format){
+    const headers = reportHeaders();
+    if(format==='pdf') return printPdf(`Valle-${effectiveReport}-report`);
+    if(format==='csv') return download(`valle-${effectiveReport}-report.csv`, csv([headers,...tableRows]), 'text/csv;charset=utf-8');
+
+    const summaryRows = [
+      ['Rows Returned', tableRows.length],
+      ['Fuel Litres', data.fuel.reduce((s,f)=>s+n(f.fuelLitres),0)],
+      ['Vehicle Out Count', data.out.length],
+      ['Garage Visits', data.ass.length],
+      ['Parts Issued Rows', data.issuedParts.length],
+      ['Parts Cost Total', data.partsForCost.reduce((s,p)=>s+partsCostTotal(p),0)],
+      ['Parts Charged Total', data.partsForCost.reduce((s,p)=>s+partsChargedTotal(p),0)],
+      ['Margin Total', data.partsForCost.reduce((s,p)=>s+partMargin(p),0)],
+      ['Vehicle Cost Total', vehicleCostRows.reduce((s,r)=>s+r.totalCost,0)],
+      ['Vehicle Charged Total', vehicleCostRows.reduce((s,r)=>s+r.totalCharged,0)],
+      ['Vehicle Margin Total', vehicleCostRows.reduce((s,r)=>s+r.totalMargin,0)],
     ];
-  },[isFuelOnly,isVehicleOnly,isStore]);
-
-  const defaultReport = isFuelOnly ? 'fuel' : isVehicleOnly ? 'vehicle' : 'all';
-  const [draft,setDraft] = useState({ search:'', report:defaultReport, period:'month', from:'', to:'', mechanic:'', part:'' });
-  const [filter,setFilter] = useState({ search:'', report:defaultReport, period:'month', from:'', to:'', mechanic:'', part:'' });
-  const [applied,setApplied] = useState(false);
-  const [selectedInsight,setSelectedInsight] = useState('');
-
-  function allowedType(type){
-    if(isAdmin) return true;
-    if(isFuelOnly) return type === 'Fuel';
-    if(isVehicleOnly) return type === 'Vehicle Out/In';
-    if(isStore) return ['Assessment','Low Stock','Parts Issued'].includes(type);
-    return false;
-  }
-  function applyReport(nextDraft=draft){
-    let cleaned = { ...nextDraft };
-    if(!reportOptions.some(o=>o.value === cleaned.report)) cleaned.report = reportOptions[0]?.value || defaultReport;
-    setFilter(cleaned);
-    setDraft(cleaned);
-    setApplied(true);
-  }
-  function clickPlate(plate){ if(!plate || plate === '-') return; const next = { ...draft, search:plate }; applyReport(next); setSelectedInsight(`Filtered by vehicle ${plate}`); }
-  function clickPart(part){ if(!part || part === '-') return; const next = { ...draft, part, report:isAdmin ? 'parts' : draft.report }; applyReport(next); setSelectedInsight(`Filtered by part ${part}`); }
-  function clickReport(report){ const next = { ...draft, report }; applyReport(next); setSelectedInsight(`Filtered ${report} report`); }
-
-  const rows = useMemo(()=>{
-    const q = String(filter.search || '').toLowerCase();
-    const m = String(filter.mechanic || '').toLowerCase();
-    const p = String(filter.part || '').toLowerCase();
-    const all = [];
-
-    fuelConsumptions.forEach(f => all.push({
-      date: f.recordedAt,
-      plate: f.vehicle,
-      type:'Fuel',
-      fuel:n(f.fuelLitres),
-      parts:'-',
-      cost:0,
-      mechanic:f.recordedBy || '-',
-      status:'Recorded',
-      source:f,
-      duration:0,
-    }));
-    vehicleOutActivities.forEach(o => all.push({
-      date:o.startDateTime,
-      plate:o.vehicle,
-      type:'Vehicle Out/In',
-      fuel:0,
-      parts:'-',
-      cost:0,
-      mechanic:o.guideName || o.driverName || '-',
-      status:o.endDateTime?'Returned':'Out',
-      source:o,
-      duration:hoursBetween(o.startDateTime,o.endDateTime),
-    }));
-    assessments.forEach(a => {
-      const parts = a.parts || [];
-      all.push({
-        date:a.createdAt,
-        plate:a.vehicle,
-        type:'Assessment',
-        fuel:0,
-        parts:parts.map(x=>`${partName(x)} x${x.qty || 1}`).join(', ') || '-',
-        cost:parts.reduce((s,x)=>s+partCost(x),0),
-        mechanic:a.mechanic || '-',
-        status:a.status,
-        source:a,
-        duration:0,
-      });
-      parts.forEach(x => all.push({
-        date:a.createdAt,
-        plate:a.vehicle,
-        type:'Parts Issued',
-        fuel:0,
-        parts:`${partName(x)} x${x.qty || 1}`,
-        cost:partCost(x),
-        mechanic:a.mechanic || '-',
-        status:a.status,
-        source:x,
-        duration:0,
-      }));
+    return exportProfessionalXlsx({
+      fileName: `valle-${effectiveReport}-report`,
+      title: `${String(effectiveReport).replaceAll('-', ' ').toUpperCase()} Extract`,
+      reportType: effectiveReport,
+      filters,
+      headers,
+      rows: tableRows,
+      summaryRows,
+      currentUser,
+      sourcePage: 'Executive Reports & System Tracking',
     });
-    garageOps.forEach(g => {
-      const parts = g.partsUsed || [];
-      all.push({
-        date:g.start || g.checkInDateTime || g.createdAt,
-        plate:g.vehicle,
-        type:'Garage Work',
-        fuel:0,
-        parts:parts.map(x=>`${partName(x)} x${x.qty || 1}`).join(', ') || '-',
-        cost:parts.reduce((s,x)=>s+partCost(x),0),
-        mechanic:g.mechanic || '-',
-        status:g.status,
-        source:g,
-        duration:hoursBetween(g.start || g.checkInDateTime, g.end),
-      });
-      parts.forEach(x => all.push({
-        date:g.start || g.checkInDateTime || g.createdAt,
-        plate:g.vehicle,
-        type:'Parts Issued',
-        fuel:0,
-        parts:`${partName(x)} x${x.qty || 1}`,
-        cost:partCost(x),
-        mechanic:g.mechanic || '-',
-        status:g.status,
-        source:x,
-        duration:0,
-      }));
+  }
+
+
+  function exportChartXlsx(name, rows, headers=['Label','Value']){
+    return exportProfessionalXlsx({
+      fileName:`valle-chart-${name}`,
+      title:`${name.replaceAll('-', ' ').toUpperCase()} Chart Export`,
+      reportType:name,
+      filters,
+      headers,
+      rows:(rows||[]).map(r=>[r.label, r.value]),
+      summaryRows:[['Rows Exported',(rows||[]).length]],
+      currentUser,
+      sourcePage:'Reports Chart / Analytics',
     });
-    inventory.filter(i=>n(i.stock)<=n(i.reorderLevel)).forEach(i => all.push({
-      date:new Date().toISOString(),
-      plate:'-',
-      type:'Low Stock',
-      fuel:0,
-      parts:i.name,
-      cost:n(i.stock)*n(i.lastPrice),
-      mechanic:'Store Keeper',
-      status:`${i.stock}/${i.reorderLevel}`,
-      source:i,
-      duration:0,
-    }));
+  }
 
-    return all.filter(r =>
-      allowedType(r.type) &&
-      (!q || `${r.plate} ${r.type} ${r.parts} ${r.status}`.toLowerCase().includes(q)) &&
-      (!m || String(r.mechanic).toLowerCase().includes(m)) &&
-      (!p || String(r.parts).toLowerCase().includes(p)) &&
-      (filter.report === 'all' || (filter.report === 'parts' ? r.type === 'Parts Issued' : r.type.toLowerCase().includes(filter.report))) &&
-      periodOk(r.date,filter)
-    ).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  },[filter, fuelConsumptions, vehicleOutActivities, assessments, garageOps, inventory, role]);
+  return <div className="page reports-page">
+    <PageHeader title="Executive Reports & System Tracking" subtitle="Super admin reporting centre with exact filters: today only, last 7 days, current month, current year by all months, manual date, manual month and manual year. Parts report shows only parts issued/deducted from store." />
+    <div className="toolbar report-toolbar">
+      <Field label="Report Type"><select value={effectiveReport} onChange={e=>setFilters({...filters,reportType:e.target.value})}>{allowedReports.map(r=><option key={r} value={r}>{r==='vehicle-out'?'Vehicle In / Out':r==='vehicle-cost'?'Vehicle Cost Report':r.replace('-',' ').toUpperCase()}</option>)}</select></Field>
+      <Field label="Period"><select value={filters.period} onChange={e=>setFilters({...filters,period:e.target.value})}><option value="today">Today Only</option><option value="week">Last 7 Days</option><option value="month">Current Month</option><option value="year">Current Year - All Months</option><option value="manual-date">Manual Date Range</option><option value="manual-month">Manual Month</option><option value="manual-year">Manual Year</option></select></Field>
+      {filters.period === 'manual-date' && <Field label="From"><Input type="date" value={filters.from} onChange={e=>setFilters({...filters,from:e.target.value})}/></Field>}
+      {filters.period === 'manual-date' && <Field label="To"><Input type="date" value={filters.to} onChange={e=>setFilters({...filters,to:e.target.value})}/></Field>}
+      {filters.period === 'manual-month' && <Field label="Choose Month"><Input type="month" value={filters.month} onChange={e=>setFilters({...filters,month:e.target.value})}/></Field>}
+      {filters.period === 'manual-year' && <Field label="Choose Year"><Input type="number" min="2020" max="2100" value={filters.year} onChange={e=>setFilters({...filters,year:e.target.value})}/></Field>}
+      <Field label="Plate Search"><Input placeholder="AP 03..." value={filters.plate} onChange={e=>setFilters({...filters,plate:e.target.value})}/></Field>
+      <div className="form-actions align-end"><Button onClick={()=>{setSelected('');refreshAll();}}>Apply Filter</Button><Button variant="secondary" onClick={()=>exportRows('csv')}>CSV</Button><Button variant="secondary" onClick={()=>exportRows('excel')}>Excel XLSX</Button><Button variant="secondary" onClick={()=>exportRows('pdf')}>PDF</Button></div>
+    </div>
 
-  const allParts = garageOps.flatMap(g => (g.partsUsed || []).map(p=>({...p, vehicle:g.vehicle, createdAt:g.createdAt || g.start}))).concat(assessments.flatMap(a => (a.parts || []).map(p=>({...p, vehicle:a.vehicle, createdAt:a.createdAt}))));
-  const vehicleCosts = group(rows.filter(r=>['Garage Work','Assessment','Fuel','Vehicle Out/In','Parts Issued'].includes(r.type)), r=>r.plate, r=>n(r.cost)+n(r.fuel)*60).slice(0,10);
-  const mechanicProd = group(rows.filter(r=>r.mechanic && r.mechanic !== '-'), r=>r.mechanic, r=>r.type==='Garage Work'?Math.max(1,n(r.duration)):0.5).slice(0,10);
-  const inventoryProfit = inventory.map(i=>({ label:i.name, value:(n(i.lastPrice)-n(i.costPrice||0))*n(i.stock) })).sort((a,b)=>b.value-a.value).slice(0,10);
-  const fuelFiltered = fuelConsumptions.filter(f=>periodOk(f.recordedAt,filter) && (!filter.search || String(f.vehicle).toLowerCase().includes(String(filter.search).toLowerCase())));
-  const outFiltered = vehicleOutActivities.filter(o=>periodOk(o.startDateTime,filter) && (!filter.search || String(o.vehicle).toLowerCase().includes(String(filter.search).toLowerCase())));
-  const fuelByVehicle = group(fuelFiltered, f=>f.vehicle, f=>n(f.fuelLitres)).slice(0,10);
-  const monthlyFuel = group(fuelFiltered, f=>ym(f.recordedAt), f=>n(f.fuelLitres)).sort((a,b)=>a.label.localeCompare(b.label)).slice(-8);
-  const monthlyRepair = group(garageOps.filter(g=>periodOk(g.createdAt || g.start,filter)), g=>ym(g.createdAt || g.start), g=>(g.partsUsed||[]).reduce((s,p)=>s+partCost(p),0)).sort((a,b)=>a.label.localeCompare(b.label)).slice(-8);
-  const activityByVehicle = group(outFiltered, o=>o.vehicle).slice(0,10);
-  const activityDurationByVehicle = group(outFiltered, o=>o.vehicle, o=>hoursBetween(o.startDateTime,o.endDateTime)).slice(0,10);
-  const dailyOps = group(rows, r=>day(r.date)).sort((a,b)=>a.label.localeCompare(b.label)).slice(-10);
-  const partsMix = group(allParts.filter(p=>periodOk(p.createdAt,filter)), p=>partName(p), p=>n(p.qty||p.quantity||1)).slice(0,6);
-  const lowStockRows = inventory.filter(i=>n(i.stock)<=n(i.reorderLevel)).map(i=>({ label:i.name, value:n(i.stock) }));
-  const mostRepaired = group(garageOps.filter(g=>periodOk(g.createdAt || g.start,filter)), g=>g.vehicle).slice(0,10);
-  const openGarage = garageOps.filter(g=>!['Completed','Cancelled'].includes(g.status)).length;
-  const openAssessments = assessments.filter(a=>!['Completed'].includes(a.status)).length;
-  const totalFuel = rows.reduce((s,r)=>s+n(r.fuel),0);
-  const totalCost = rows.reduce((s,r)=>s+n(r.cost),0) + (isAdmin ? totalFuel * 60 : 0);
-  const totalDuration = rows.reduce((s,r)=>s+n(r.duration),0);
-  const totalParts = rows.filter(r=>r.type==='Parts Issued').length;
-
-  function exportData(){ return [['Date','Plate','Report Type','Fuel L','Parts','Cost','Mechanic/Guide','Duration Hours','Status'], ...rows.map(r=>[fmt(r.date),r.plate,r.type,r.fuel,r.parts,r.cost,r.mechanic,Number(r.duration||0).toFixed(2),r.status])]; }
-  function exportCsv(){ download(`valle-${role || 'admin'}-report.csv`, csv(exportData())); notify?.('CSV report exported.'); }
-  function exportExcel(){ const html = `<table>${exportData().map(r=>`<tr>${r.map(c=>`<td>${String(c).replaceAll('&','&amp;').replaceAll('<','&lt;')}</td>`).join('')}</tr>`).join('')}</table>`; download(`valle-${role || 'admin'}-report.xls`, html, 'application/vnd.ms-excel'); notify?.('Excel report exported.'); }
-  function exportPdf(){ printPdf(`Vallé ${role || 'Admin'} Report`); notify?.('PDF print/export opened.'); }
-
-  if(!isAdmin && !isStore && !isFuelOnly && !isVehicleOnly) return <div className="page"><Card><h2>Reports are restricted for your role.</h2></Card></div>;
-
-  const subtitle = isFuelOnly
-    ? 'Fuel reports only: litres by vehicle, day/week/month and export for fuel management.'
-    : isVehicleOnly
-      ? 'Vehicle in/out reports only: trip counts, duration and returned/out status.'
-      : isStore
-        ? 'Store Keeper reports: assessments, parts issued and low stock only.'
-        : 'Manager-level reports with advanced charts, filters, operational tracking and exports.';
-
-  return <div className="page report-page admin-analytics-page role-aware-reports-page">
-    <PageHeader title={isAdmin ? 'Advanced Analytics & Reports' : isFuelOnly ? 'Fuel Reports' : isVehicleOnly ? 'Vehicle In / Out Reports' : 'Store Keeper Reports'} subtitle={subtitle} />
-
-    <Card className="report-filters professional-report-filters">
-      <div className="report-filter-head">
-        <div><h2>Report Builder</h2><p>Select report type, period and search criteria, then click Apply. Charts are hoverable and clickable for filtering.</p>{selectedInsight && <small className="selected-insight">{selectedInsight}</small>}</div>
-        <div className="report-export-actions"><Button variant="secondary" onClick={exportCsv}>CSV</Button><Button variant="secondary" onClick={exportExcel}>Excel</Button><Button onClick={exportPdf}>PDF</Button></div>
+    <Card className="report-period-indicator">
+      <div>
+        <b>Active filter:</b> {periodLabel(filters)}
       </div>
-      <div className="form-grid six">
-        <Field label="Search plate / ticket"><Input value={draft.search} onChange={e=>setDraft({...draft,search:e.target.value})} placeholder="AP 03, ASM..." /></Field>
-        <Field label="Report"><select className="input" value={draft.report} onChange={e=>setDraft({...draft,report:e.target.value})}>{reportOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></Field>
-        <Field label="Period"><select className="input" value={draft.period} onChange={e=>setDraft({...draft,period:e.target.value})}><option value="today">Today</option><option value="week">Week</option><option value="month">Month</option><option value="year">Year</option><option value="custom">Custom</option></select></Field>
-        <Field label="From"><Input type="date" value={draft.from} onChange={e=>setDraft({...draft,from:e.target.value})} /></Field>
-        <Field label="To"><Input type="date" value={draft.to} onChange={e=>setDraft({...draft,to:e.target.value})} /></Field>
-        <div className="report-apply-row no-border"><Button onClick={()=>applyReport()}>Apply Filter & View Result</Button></div>
+      <div>
+        <b>Report:</b> {String(effectiveReport).replaceAll('-', ' ').toUpperCase()}
       </div>
-      {(isAdmin || isStore) && <div className="form-grid two"><Field label="Mechanic"><select className="input" value={draft.mechanic} onChange={e=>setDraft({...draft,mechanic:e.target.value})}><option value="">All mechanics</option>{mechanics.map(m=><option key={m.id} value={m.name}>{m.name}</option>)}</select></Field><Field label="Part"><Input value={draft.part} onChange={e=>setDraft({...draft,part:e.target.value})} placeholder="Brake pads, oil filter..." /></Field></div>}
+      <div>
+        <b>Rows ready:</b> {tableRows.length}
+      </div>
+      <div>
+        <b>Export by:</b> {currentUser?.name || '-'} / {currentUser?.email || '-'}
+      </div>
     </Card>
 
-    <div className="stats-grid analytics-grid admin-analytics-kpis role-report-kpis">
-      {isAdmin && <Kpi label="Vehicle Cost" value={money(totalCost)} note="Parts + estimated fuel" tone="warning" onClick={()=>clickReport('all')} />}
-      {(isAdmin || isFuelOnly) && <Kpi label="Fuel Used" value={`${Math.round(totalFuel)} L`} note="Fuel reports only for fuel role" tone="success" onClick={()=>clickReport('fuel')} />}
-      {(isAdmin || isStore) && <Kpi label="Parts Issued/Used" value={totalParts} note="Report-critical parts movement" tone="neutral" onClick={()=>clickReport('parts')} />}
-      {(isAdmin || isVehicleOnly) && <Kpi label="Vehicle Activities" value={activityByVehicle.reduce((s,x)=>s+x.value,0)} note="Out/in records" tone="neutral" onClick={()=>clickReport('vehicle')} />}
-      {isAdmin && <Kpi label="Garage Open" value={openGarage} note="Jobs still in progress" tone="warning" onClick={()=>clickReport('garage')} />}
-      <Kpi label="Rows Returned" value={rows.length} note={applied ? 'Filtered result' : 'Default current period'} tone="neutral" />
+    {selected && <Card className="section-small"><div className="notice info">Interactive filter selected: <b>{selected}</b>. Clear it by clicking Apply Filter.</div></Card>}
+
+    <div className="metrics-grid">
+      {(isAdmin||isFuel) && <Kpi label="Fuel Litres" value={`${data.fuel.reduce((s,f)=>s+n(f.fuelLitres),0).toFixed(1)} L`} note={`${data.fuel.length} fuel records`} onClick={()=>setFilters({...filters,reportType:'fuel'})}/>}
+      {(isAdmin||isVehicle) && <Kpi label="Vehicle Out" value={data.out.length} note={`Total duration ${dur(data.out.reduce((s,o)=>s+secs(o.startDateTime,o.endDateTime),0))}`} onClick={()=>setFilters({...filters,reportType:'vehicle-out'})}/>}
+      {isAdmin && <Kpi label="Garage Visits" value={data.ass.length} note="Exact: one assessment = one visit" onClick={()=>setFilters({...filters,reportType:'garage'})}/>}
+      {(isAdmin||isStore) && <Kpi label="Parts Issued" value={data.issuedParts.length} note="Not summed with garage-used parts" onClick={()=>setFilters({...filters,reportType:'parts'})}/>}
+      {isAdmin && <Kpi label="Parts Cost / Charged / Margin" value={money(vehicleCostRows.reduce((s,r)=>s+r.totalCost,0))} note={`Charged ${money(vehicleCostRows.reduce((s,r)=>s+r.totalCharged,0))} • Margin ${money(vehicleCostRows.reduce((s,r)=>s+r.totalMargin,0))}`} onClick={()=>setFilters({...filters,reportType:'vehicle-cost'})}/>}
     </div>
 
-    <div className="chart-grid two-column-charts role-report-charts">
-      {(isAdmin || isFuelOnly) && <>
-        <ChartCard title="Monthly Fuel Consumption" subtitle="Litres by month from FuelConsumption" badge="Fuel" tone="success">
-          {monthlyFuel.length ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={monthlyFuel} onClick={(e)=>e?.activeLabel && applyReport({...draft, period:'custom', search:draft.search})}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="label" /><YAxis /><Tooltip /><Area type="monotone" dataKey="value" stroke="#24f66f" fill="#24f66f" fillOpacity={0.24} strokeWidth={3} /></AreaChart></ResponsiveContainer> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Fuel by Vehicle" subtitle="Click a vehicle to filter its fuel report" badge="Litres" tone="success">
-          {fuelByVehicle.length ? <BarList rows={fuelByVehicle} suffix=" L" onSelect={clickPlate} /> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Fuel Efficiency View" subtitle="Vehicle litre distribution" badge="Pie" tone="success">
-          {fuelByVehicle.length ? <Donut rows={fuelByVehicle.slice(0,6)} onSelect={clickPlate} /> : <EmptyChart />}
-        </ChartCard>
+    <div className="analytics-grid">
+      {(isAdmin||isFuel) && <>
+        <ChartCard title="Fuel Consumption" subtitle="Litres filtered by selected period"><ResponsiveContainer width="100%" height="100%"><AreaChart data={analytics.fuelByPeriod}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label" label={{ value: "X Axis: Date", position: "insideBottom", offset: -3 }}/><YAxis label={{ value: "Y Axis: Fuel Litres", angle: -90, position: "insideLeft" }}/><Tooltip content={<ChartTooltip valueLabel="Fuel" suffix=" L" xAxisName="Date" yAxisName="Fuel Litres" />}/><Area dataKey="value" fill="#24f66f" stroke="#24f66f" onClick={(d)=>setSelected(d?.payload?.label)}/></AreaChart></ResponsiveContainer></ChartCard>
+        <ChartCard title="Fuel by Vehicle Plate" subtitle="Click a bar to filter by vehicle"><ResponsiveContainer width="100%" height="100%"><BarChart data={analytics.fuelByVehicle}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label" label={{ value: "X Axis: Vehicle Plate", position: "insideBottom", offset: -3 }}/><YAxis label={{ value: "Y Axis: Fuel Litres", angle: -90, position: "insideLeft" }}/><Tooltip content={<ChartTooltip valueLabel="Fuel" suffix=" L" xAxisName="Vehicle Plate" yAxisName="Fuel Litres" />}/><Bar dataKey="value" fill="#6f3cff" onClick={(d)=>setSelected(d?.label)}/></BarChart></ResponsiveContainer></ChartCard>
       </>}
-
-      {(isAdmin || isVehicleOnly) && <>
-        <ChartCard title="Vehicle Out Frequency" subtitle="Click a vehicle to filter out/in records" badge="Trips" tone="neutral">
-          {activityByVehicle.length ? <BarList rows={activityByVehicle} onSelect={clickPlate} /> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Vehicle Out Duration" subtitle="Total hours out by vehicle" badge="Hours" tone="neutral">
-          {activityDurationByVehicle.length ? <BarList rows={activityDurationByVehicle} suffix="h" onSelect={clickPlate} /> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Daily Vehicle Activity" subtitle="Out/in records by date" badge="Daily" tone="success">
-          {dailyOps.length ? <ResponsiveContainer width="100%" height="100%"><BarChart data={dailyOps}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="label" /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="value" fill="#2b0048" radius={[8,8,0,0]} onClick={(d)=>setSelectedInsight(`Viewing ${d?.label || 'selected day'}`)} /></BarChart></ResponsiveContainer> : <EmptyChart />}
-        </ChartCard>
+      {(isAdmin||isVehicle) && <>
+        <ChartCard title="Vehicle Out Frequency" subtitle="Each dot is a vehicle. Hover shows plate, ticket count and every out time for the selected period.">{analytics.outVehicleDots.length?<ResponsiveContainer width="100%" height="100%"><ScatterChart data={analytics.outVehicleDots}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="x" type="number" name="Vehicle" tickFormatter={(v)=>analytics.outVehicleDots[v-1]?.plate || v} label={{ value: "X Axis: Vehicle Plate", position: "insideBottom", offset: -3 }}/><YAxis dataKey="y" type="number" name="Tickets" allowDecimals={false} label={{ value: "Y Axis: Ticket Count", angle: -90, position: "insideLeft" }}/><Tooltip content={<ChartTooltip valueLabel="Trips" xAxisName="Vehicle Plate" yAxisName="Ticket Count" />}/><Scatter dataKey="y" fill="#ff315f" /></ScatterChart></ResponsiveContainer>:<Empty/>}</ChartCard>
+        <ChartCard title="Out Duration by Vehicle" subtitle="Exact accumulated out time by vehicle in days, hours, minutes and seconds."><BarList rows={analytics.outDuration} onSelect={setSelected}/></ChartCard>
       </>}
-
       {isAdmin && <>
-        <ChartCard title="Repair Cost per Month" subtitle="GarageOperation parts value by month" badge="Cost" tone="warning">
-          {monthlyRepair.length ? <ResponsiveContainer width="100%" height="100%"><BarChart data={monthlyRepair}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="label" /><YAxis /><Tooltip formatter={(v)=>money(v)} /><Bar dataKey="value" fill="#6f3cff" radius={[8,8,0,0]} onClick={(d)=>setSelectedInsight(`Repair cost period: ${d?.label}`)} /></BarChart></ResponsiveContainer> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Vehicle Cost Report" subtitle="Total repair and estimated fuel cost per vehicle" badge="Vehicles" tone="warning">
-          {vehicleCosts.length ? <BarList rows={vehicleCosts} cost onSelect={clickPlate} /> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Most Repaired Vehicles" subtitle="Garage frequency by vehicle" badge="Frequency" tone="neutral">
-          {mostRepaired.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={shortRows(mostRepaired,10)} onClick={(e)=>e?.activePayload?.[0]?.payload?.label && clickPlate(e.activePayload[0].payload.label)}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="short" /><YAxis allowDecimals={false} /><Tooltip labelFormatter={(label, data)=>data?.[0]?.payload?.label || label} /><Line type="monotone" dataKey="value" stroke="#ff315f" strokeWidth={4} dot={{ r: 5 }} /></LineChart></ResponsiveContainer> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Mechanic Productivity" subtitle="Hours worked, jobs touched and average activity" badge="Team" tone="success">
-          {mechanicProd.length ? <ResponsiveContainer width="100%" height="100%"><BarChart layout="vertical" data={shortRows(mechanicProd,8)}><CartesianGrid strokeDasharray="3 3" /><XAxis type="number" /><YAxis type="category" dataKey="short" width={90} /><Tooltip labelFormatter={(label, data)=>data?.[0]?.payload?.label || label} /><Bar dataKey="value" fill="#24f66f" radius={[0,8,8,0]} onClick={(d)=>{const next={...draft, mechanic:d?.label || ''}; applyReport(next);}} /></BarChart></ResponsiveContainer> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Inventory Profit / Value" subtitle="Selling price minus cost price by stock" badge="Margin" tone="warning">
-          {inventoryProfit.length ? <BarList rows={inventoryProfit} cost onSelect={clickPart} /> : <EmptyChart />}
-        </ChartCard>
+        <ChartCard title="Repaired Vehicles" subtitle="Garage work jobs filtered by selected period" onExport={()=>exportChartXlsx('repaired-vehicles', analytics.repairsByPeriod)}><ResponsiveContainer width="100%" height="100%"><BarChart data={analytics.repairsByPeriod}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label" label={{ value: "X Axis: Date", position: "insideBottom", offset: -3 }}/><YAxis label={{ value: "Y Axis: Repair Count", angle: -90, position: "insideLeft" }}/><Tooltip content={<ChartTooltip valueLabel="Repairs" xAxisName="Date" yAxisName="Repair Count" />}/><Bar dataKey="value" fill="#2bb7ff"/></BarChart></ResponsiveContainer></ChartCard>
+        <ChartCard title="Repair Cost Per Month" subtitle="Parts cost only, no duplicate assessment/work total"><ResponsiveContainer width="100%" height="100%"><AreaChart data={analytics.repairCostByMonth}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label" label={{ value: "X Axis: Month", position: "insideBottom", offset: -3 }}/><YAxis label={{ value: "Y Axis: Parts Cost (MUR)", angle: -90, position: "insideLeft" }}/><Tooltip content={<ChartTooltip valueLabel="Repair Cost" xAxisName="Month" yAxisName="Parts Cost" />}/><Area dataKey="value" fill="#ffd84d" stroke="#ff315f"/></AreaChart></ResponsiveContainer></ChartCard>
+        <ChartCard title="Garage Visits" subtitle="One assessment = one garage visit" onExport={()=>exportChartXlsx('garage-visits', analytics.garageVisitsByPeriod)}><ResponsiveContainer width="100%" height="100%"><LineChart data={analytics.garageVisitsByPeriod}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label" label={{ value: "X Axis: Date", position: "insideBottom", offset: -3 }}/><YAxis label={{ value: "Y Axis: Visit Count", angle: -90, position: "insideLeft" }}/><Tooltip content={<ChartTooltip valueLabel="Garage Visits" xAxisName="Date" yAxisName="Visit Count" />}/><Line dataKey="value" stroke="#24f66f" strokeWidth={3}/></LineChart></ResponsiveContainer></ChartCard>
       </>}
-
-      {(isAdmin || isStore) && <>
-        <ChartCard title="Top 10 Parts Used" subtitle="Fast-moving parts from assessment and garage" badge="Parts" tone="neutral">
-          {partsMix.length ? <Donut rows={partsMix} onSelect={clickPart} /> : <EmptyChart />}
-        </ChartCard>
-        <ChartCard title="Low Stock Risk" subtitle="Items at or below reorder level" badge="Stock" tone="danger">
-          {lowStockRows.length ? <BarList rows={lowStockRows.slice(0,10)} onSelect={clickPart} /> : <EmptyChart text="No low stock risk." />}
-        </ChartCard>
+      {isAdmin && <>
+        <ChartCard title="Vehicle Cost Trend" subtitle="Cost per ticket/garage visit. One assessment + linked garage repair is counted once." onExport={()=>exportChartXlsx('vehicle-cost-trend', analytics.vehicleCostByPeriod)}><ResponsiveContainer width="100%" height="100%"><AreaChart data={analytics.vehicleCostByPeriod}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label" label={{ value: "X Axis: Month", position: "insideBottom", offset: -3 }}/><YAxis label={{ value: "Y Axis: Vehicle Cost (MUR)", angle: -90, position: "insideLeft" }}/><Tooltip content={<ChartTooltip valueLabel="Vehicle Cost" xAxisName="Month" yAxisName="Cost" />}/><Area dataKey="value" fill="#6f3cff" stroke="#2b0048"/></AreaChart></ResponsiveContainer></ChartCard>
+        <ChartCard title="Vehicle Cost / Charged by Plate" subtitle="Total and per-visit cost by vehicle plate from assessment/garage combined rows." onExport={()=>exportChartXlsx('vehicle-cost-by-plate', analytics.vehicleCostByVehicle)}><BarList rows={analytics.vehicleCostByVehicle} cost onSelect={setSelected}/></ChartCard>
       </>}
-
-      {isAdmin && <ChartCard title="Operational Summary" subtitle="Current workshop control points" badge="Insight" tone="neutral">
-        <div className="next-actions-panel"><button onClick={()=>clickReport('garage')}>Open garage jobs: <b>{openGarage}</b></button><button onClick={()=>clickReport('assessment')}>Open assessments: <b>{openAssessments}</b></button><button onClick={()=>clickReport('vehicle')}>Total out duration: <b>{Math.round(totalDuration)}h</b></button><button>Report rows: <b>{rows.length}</b></button></div>
-      </ChartCard>}
+      {(isAdmin||isStore) && <>
+        <ChartCard title="Parts Issued" subtitle="Store Keeper issued parts only" onExport={()=>exportChartXlsx('parts-issued', analytics.partsIssued)}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={analytics.partsIssued} dataKey="value" nameKey="label" innerRadius={55} outerRadius={90} onClick={(d)=>setSelected(d?.label)}>{analytics.partsIssued.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip content={<ChartTooltip valueLabel="Quantity" xAxisName="Part" yAxisName="Quantity" />}/></PieChart></ResponsiveContainer></ChartCard>
+        <ChartCard title="Low Stock Risk" subtitle="Items at/below reorder level" onExport={()=>exportChartXlsx('low-stock-risk', analytics.lowStock.map(i=>({label:i.name,value:n(i.stock)})))}><BarList rows={analytics.lowStock.map(i=>({label:i.name,value:n(i.stock)}))} onSelect={setSelected}/></ChartCard>
+      </>}
     </div>
 
-    <Card className="report-result-card"><div className="card-head"><div><h2>Report Result Preview</h2><p>{isFuelOnly ? 'Fuel role only sees fuel data.' : isVehicleOnly ? 'Vehicle manager only sees vehicle in/out data.' : 'Admin can export this same data as CSV, Excel or PDF.'}</p></div><Badge tone="neutral">{rows.length} rows</Badge></div><Table headers={['Date','Plate','Type','Fuel L','Parts','Cost','Mechanic/Guide','Duration','Status']}>
-      {rows.map((r,i)=><tr key={i}><td>{fmt(r.date)}</td><td><b>{r.plate}</b></td><td>{r.type}</td><td>{r.fuel}</td><td>{r.parts}</td><td><b>{(isAdmin || isStore) && r.cost ? money(r.cost) : '-'}</b></td><td>{r.mechanic}</td><td>{r.duration ? `${Number(r.duration).toFixed(1)}h` : '-'}</td><td><Badge tone={String(r.status).includes('Completed')||String(r.status).includes('Returned')||String(r.status).includes('Recorded')?'success':'warning'}>{r.status}</Badge></td></tr>)}
-    </Table></Card>
+    <Card>
+      <div className="card-head"><div><h2>Report Result Table</h2><p>Filtered database results with stored date/time, vehicle plate, ticket, visit count, repair details and costs. Use the period dropdown below to extract by today, last 7 days, month, year or manual range.</p></div><div className="chart-card-tools"><select className="chart-period-select" value={filters.period} onChange={e=>setFilters({...filters,period:e.target.value})}><option value="today">Today Only</option><option value="week">Last 7 Days</option><option value="month">Current Month</option><option value="year">Current Year - All Months</option><option value="manual-date">Manual Date Range</option><option value="manual-month">Manual Month</option><option value="manual-year">Manual Year</option></select><Badge>{tableRows.length} rows</Badge></div></div>
+      {(() => {
+        const headers = reportHeaders();
+        return <div className="table-wrap table-responsive" role="region" aria-label="Responsive report result table" tabIndex={0}><table><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{tableRows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j} data-label={headers[j] || ''}>{cell || '-'}</td>)}</tr>)}</tbody></table></div>;
+      })()}
+    </Card>
   </div>;
 }

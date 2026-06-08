@@ -1,16 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Field, Input, PageHeader, Table, Badge } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
 function fmt(v){ return v ? String(v).replace('T',' ').slice(0,16) : '-'; }
-function hoursBetween(a,b){ const s=a?new Date(a):null; const e=b?new Date(b):new Date(); if(!s || Number.isNaN(s.getTime())) return 0; return Math.max(0, (e-s)/36e5); }
-function niceHours(h){ const hrs=Math.floor(h); const mins=Math.round((h-hrs)*60); return `${hrs}h ${mins}m`; }
+function secondsBetween(a,b,nowOverride=null){ const s=a?new Date(a):null; const e=b?new Date(b):(nowOverride || new Date()); if(!s || Number.isNaN(s.getTime())) return 0; return Math.max(0, Math.floor((e-s)/1000)); }
+function hoursBetween(a,b,nowOverride=null){ return secondsBetween(a,b,nowOverride)/3600; }
+function niceDuration(seconds){ const s=Math.max(0,Math.floor(seconds||0)); const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const sec=s%60; return `${h}h ${m}m ${sec}s`; }
 
 export default function VehicleOut(){
   const { vehicles, vehicleOutActivities, addVehicleOutActivity, apiStatus, nowLocalInput, findVehicleByPlate, refreshAll } = useApp();
   const [plateSearch,setPlateSearch]=useState('');
   const [tab,setTab]=useState('out');
   const [message,setMessage]=useState('');
+  const [clock,setClock]=useState(new Date());
+  useEffect(()=>{ const id=setInterval(()=>setClock(new Date()),1000); return ()=>clearInterval(id); },[]);
   const [form,setForm]=useState({ vehicleId:'', invoiceNumber:'', guideName:'', quadActivity:'', tripDuration:'1 hour', customTripDuration:'', destination:'', driverName:'', startDateTime:nowLocalInput(), endDateTime:'', notes:'' });
 
   const suggestions = useMemo(()=>{
@@ -29,7 +32,7 @@ export default function VehicleOut(){
     return vehicleOutActivities.filter(o=>String(o.vehicle||'').toUpperCase().includes(String(plate).toUpperCase()));
   },[vehicleOutActivities, selectedVehicle, plateSearch]);
   const totalTimes = selectedHistory.length;
-  const totalHours = selectedHistory.reduce((s,o)=>s+hoursBetween(o.startDateTime,o.endDateTime),0);
+  const totalSeconds = selectedHistory.reduce((s,o)=>s+secondsBetween(o.startDateTime,o.endDateTime,clock),0);
   const today = nowLocalInput().slice(0,10);
   const todaysTrips = vehicleOutActivities.filter(o => String(o.startDateTime || '').slice(0,10) === today);
   const previousTrips = vehicleOutActivities.filter(o => String(o.startDateTime || '').slice(0,10) !== today).slice(0,30);
@@ -85,21 +88,21 @@ export default function VehicleOut(){
       <h2>Record Vehicle In</h2>
       <p className="muted">These are vehicles currently out. Click Record In when the quad returns, then it can go out again for another activity.</p>
       <Table headers={["Vehicle", "Invoice", "Guide", "Activity", "Time Out", "Current Time Out", "Action"]}>
-        {openTrips.map(o=><tr key={o.id}><td><b>{o.vehicle}</b></td><td>{o.invoiceNumber || '-'}</td><td>{o.guideName || '-'}</td><td>{o.quadActivity || o.activityType || '-'}</td><td>{fmt(o.startDateTime)}</td><td>{niceHours(hoursBetween(o.startDateTime))}</td><td><Button onClick={()=>markIn(o)}>Record In</Button></td></tr>)}
+        {openTrips.map(o=><tr key={o.id}><td><b>{o.vehicle}</b></td><td>{o.invoiceNumber || '-'}</td><td>{o.guideName || '-'}</td><td>{o.quadActivity || o.activityType || '-'}</td><td>{fmt(o.startDateTime)}</td><td>{niceDuration(secondsBetween(o.startDateTime,null,clock))}</td><td><Button onClick={()=>markIn(o)}>Record In</Button></td></tr>)}
         {!openTrips.length && <tr><td colSpan="7">No vehicles currently out.</td></tr>}
       </Table>
     </Card>}
 
     {tab==='history' && <Card>
       <h2>Vehicle Activity Summary</h2>
-      <div className="form-grid three"><Field label="Search Plate"><Input list="vehicle-history-list" value={plateSearch} onChange={e=>setPlateSearch(e.target.value.toUpperCase())} /><datalist id="vehicle-history-list">{vehicles.map(v=><option key={v.dbId || v.id} value={v.plate}>{v.model || v.type}</option>)}</datalist></Field><div className="metric-card"><span>Total Times Out</span><b>{totalTimes}</b></div><div className="metric-card"><span>Total Time Out</span><b>{niceHours(totalHours)}</b></div></div>
+      <div className="form-grid three"><Field label="Search Plate"><Input list="vehicle-history-list" value={plateSearch} onChange={e=>setPlateSearch(e.target.value.toUpperCase())} /><datalist id="vehicle-history-list">{vehicles.map(v=><option key={v.dbId || v.id} value={v.plate}>{v.model || v.type}</option>)}</datalist></Field><div className="metric-card"><span>Total Times Out</span><b>{totalTimes}</b></div><div className="metric-card"><span>Total Time Out</span><b>{niceDuration(totalSeconds)}</b></div></div>
       <Table headers={["Out", "In", "Vehicle", "Invoice", "Guide", "Activity", "Duration", "Total Time"]}>
-        {selectedHistory.map(o=><tr key={o.id}><td>{fmt(o.startDateTime)}</td><td>{fmt(o.endDateTime)}</td><td><b>{o.vehicle}</b></td><td>{o.invoiceNumber || '-'}</td><td>{o.guideName || '-'}</td><td>{o.quadActivity || o.activityType || '-'}</td><td>{o.tripDuration || '-'}</td><td>{niceHours(hoursBetween(o.startDateTime,o.endDateTime))}</td></tr>)}
+        {selectedHistory.map(o=><tr key={o.id}><td>{fmt(o.startDateTime)}</td><td>{fmt(o.endDateTime)}</td><td><b>{o.vehicle}</b></td><td>{o.invoiceNumber || '-'}</td><td>{o.guideName || '-'}</td><td>{o.quadActivity || o.activityType || '-'}</td><td>{o.tripDuration || '-'}</td><td>{niceDuration(secondsBetween(o.startDateTime,o.endDateTime,clock))}</td></tr>)}
         {!selectedHistory.length && <tr><td colSpan="8">Search/select a vehicle to see activity history.</td></tr>}
       </Table>
       <p className="muted">CSV, Excel and PDF extraction is available in the Reports page.</p>
     </Card>}
-    <Card className="section-small"><h2>Today's Vehicle Activity</h2><Table headers={["Out","In","Vehicle","Invoice","Guide","Activity","Time Out"]}>{todaysTrips.map(r=><tr key={r.id}><td>{fmt(r.startDateTime)}</td><td>{fmt(r.endDateTime)}</td><td><b>{r.vehicle}</b></td><td>{r.invoiceNumber || '-'}</td><td>{r.guideName || '-'}</td><td>{r.quadActivity || r.activityType || '-'}</td><td>{niceHours(hoursBetween(r.startDateTime,r.endDateTime))}</td></tr>)}{!todaysTrips.length && <tr><td colSpan="7">No vehicle activity today.</td></tr>}</Table></Card>
-    <Card className="section-small"><h2>Previous Vehicle Activity</h2><Table headers={["Out","In","Vehicle","Invoice","Guide","Activity","Time Out"]}>{previousTrips.map(r=><tr key={r.id}><td>{fmt(r.startDateTime)}</td><td>{fmt(r.endDateTime)}</td><td><b>{r.vehicle}</b></td><td>{r.invoiceNumber || '-'}</td><td>{r.guideName || '-'}</td><td>{r.quadActivity || r.activityType || '-'}</td><td>{niceHours(hoursBetween(r.startDateTime,r.endDateTime))}</td></tr>)}{!previousTrips.length && <tr><td colSpan="7">No previous records yet.</td></tr>}</Table></Card>
+    <Card className="section-small"><h2>Today's Vehicle Activity</h2><Table headers={["Out","In","Vehicle","Invoice","Guide","Activity","Time Out"]}>{todaysTrips.map(r=><tr key={r.id}><td>{fmt(r.startDateTime)}</td><td>{fmt(r.endDateTime)}</td><td><b>{r.vehicle}</b></td><td>{r.invoiceNumber || '-'}</td><td>{r.guideName || '-'}</td><td>{r.quadActivity || r.activityType || '-'}</td><td>{niceDuration(secondsBetween(r.startDateTime,r.endDateTime,clock))}</td></tr>)}{!todaysTrips.length && <tr><td colSpan="7">No vehicle activity today.</td></tr>}</Table></Card>
+    <Card className="section-small"><h2>Previous Vehicle Activity</h2><Table headers={["Out","In","Vehicle","Invoice","Guide","Activity","Time Out"]}>{previousTrips.map(r=><tr key={r.id}><td>{fmt(r.startDateTime)}</td><td>{fmt(r.endDateTime)}</td><td><b>{r.vehicle}</b></td><td>{r.invoiceNumber || '-'}</td><td>{r.guideName || '-'}</td><td>{r.quadActivity || r.activityType || '-'}</td><td>{niceDuration(secondsBetween(r.startDateTime,r.endDateTime,clock))}</td></tr>)}{!previousTrips.length && <tr><td colSpan="7">No previous records yet.</td></tr>}</Table></Card>
   </div>;
 }

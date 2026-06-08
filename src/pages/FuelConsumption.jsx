@@ -55,7 +55,7 @@ export default function FuelConsumption(){
             {suggestions.map(v => <button type="button" key={v.dbId || v.id} onClick={()=>selectVehicle(v)}><b>{v.plate}</b><span>{v.model || v.type} {v.cc ? `• ${v.cc}` : ''}</span></button>)}
           </div>}
         </Field>
-        <Field label="Fuel Type"><select className="input" value={form.fuelType} onChange={e=>setForm({...form,fuelType:e.target.value})}><option value="PETROL">Petrol</option><option value="DIESEL">Diesel</option></select></Field>
+        <Field label="Fuel Type"><select className="input" value={form.fuelType} onChange={e=>setForm({...form,fuelType:e.target.value})}><option value="PETROL">Petrol</option><option value="DIESEL">Diesel</option><option value="OIL">Oil</option></select></Field>
         <Field label="Meter Type"><select className="input" value={form.meterType} onChange={e=>setForm({...form,meterType:e.target.value})}><option value="KM">Kilometres / KM</option><option value="HRS">Hours / HRS</option></select></Field>
         <Field label="Meter Reading"><Input type="number" step="0.01" value={form.meterReading} onChange={e=>setForm({...form,meterReading:e.target.value})} /></Field>
         <Field label="Fuel Consumption / L"><Input type="number" step="0.01" value={form.fuelLitres} onChange={e=>setForm({...form,fuelLitres:e.target.value})} /></Field>

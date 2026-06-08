@@ -467,8 +467,8 @@ export default function VehicleHistory() {
       <div className="stats-grid">
         <Card>
           <h3>Garage Visits</h3>
-          <strong>{history.visits}</strong>
-          <p>Total assessments + work jobs</p>
+          <strong>{history.assessments.length}</strong>
+          <p>Exact: one assessment = one garage visit</p>
         </Card>
 
         <Card>

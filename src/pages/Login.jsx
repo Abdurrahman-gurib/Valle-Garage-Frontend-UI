@@ -168,7 +168,7 @@ export default function Login() {
               textShadow: "0 8px 20px rgba(0,0,0,0.35)",
             }}
           >
-            Garage & Spare Parts
+            Vallé Garage
           </h1>
         </div>
       </div>

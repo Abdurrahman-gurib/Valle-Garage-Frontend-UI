@@ -1,5 +1,5 @@
 import MultipleMechanicsSelect from '../components/MultipleMechanicsSelect.jsx';
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { GarageOpForm } from "../components/Forms.jsx";
 import {
   Badge,
@@ -13,9 +13,32 @@ import {
   TextArea,
 } from "../components/UI.jsx";
 import { useApp } from "../context/AppContext.jsx";
+function durationBetween(start, end){ const s=start?new Date(start):null; const e=end&&end!=='Pending'?new Date(end):null; if(!s||Number.isNaN(s.getTime())||!e||Number.isNaN(e.getTime())) return '-'; let sec=Math.max(0,Math.floor((e-s)/1000)); const d=Math.floor(sec/86400); sec%=86400; const h=Math.floor(sec/3600); sec%=3600; const m=Math.floor(sec/60); const ss=sec%60; return `${d}d ${h}h ${m}m ${ss}s`; }
+
+function toDate(v){ const d=v?new Date(v):null; return d && !Number.isNaN(d.getTime()) ? d : null; }
+function startDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function endDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(),23,59,59,999); }
+function periodOk(v, period){ const d=toDate(v); if(!d) return false; const now=new Date(); let s=null,e=null; if(period==='today'){s=startDay(now);e=endDay(now);} if(period==='week'){s=startDay(new Date(now.getFullYear(),now.getMonth(),now.getDate()-6));e=endDay(now);} if(period==='month'){s=new Date(now.getFullYear(),now.getMonth(),1);e=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);} if(period==='year'){s=new Date(now.getFullYear(),0,1);e=new Date(now.getFullYear(),11,31,23,59,59,999);} return (!s||d>=s)&&(!e||d<=e); }
+async function exportGarageXlsx(rows, period){
+  const XLSX = await import('xlsx');
+  const aoa = [
+    ['VALLÉ GARAGE OPERATIONS'],
+    ['Garage Work Extraction Report'],
+    ['Selected Period', period],
+    ['Exported At', new Date().toLocaleString('en-GB')],
+    [],
+    ['Process','Vehicle','Assessment/PO','Type','Mechanic','Check-in','Check-out','Duration','Expected','Status'],
+    ...rows.map(g=>[g.id,g.vehicle,g.assessmentId||g.transactionId||'-',g.type,g.mechanic,(g.checkInDateTime||g.start||'').replace?.('T',' ')||'-',(g.endDateTime||g.end||'').replace?.('T',' ')||'-',durationBetween(g.checkInDateTime||g.start,g.endDateTime||g.end),g.expectedDeliveryDate||'-',g.status])
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[18,18,20,18,24,22,22,20,16,16].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Garage Work'); XLSX.writeFile(wb,`garage-work-${period}.xlsx`);
+}
+
 export default function Garage() {
   const { garageOps, transactions, assessments } = useApp();
   const [modal, setModal] = useState(null);
+  const [reportPeriod,setReportPeriod]=useState('week');
+  const filteredGarageOps = useMemo(()=>garageOps.filter(g=>periodOk(g.checkInDateTime || g.start || g.createdAt, reportPeriod)),[garageOps,reportPeriod]);
   const buildRequests = transactions.filter(
     (t) =>
       ["External Vehicle Order", "Repair / Service Billing"].includes(t.type) &&
@@ -51,6 +74,15 @@ export default function Garage() {
           onOpen={(t) => setModal({ type: "fromTx", item: t })}
         />
       )}
+      <div className="history-toolbar">
+        <Select value={reportPeriod} onChange={(e)=>setReportPeriod(e.target.value)}>
+          <option value="today">Today Only</option>
+          <option value="week">Last 7 Days</option>
+          <option value="month">Current Month</option>
+          <option value="year">Current Year</option>
+        </Select>
+        <Button variant="secondary" onClick={()=>exportGarageXlsx(filteredGarageOps, reportPeriod)}>Export Garage Work XLSX</Button>
+      </div>
       <Table
         headers={[
           "Process",
@@ -59,12 +91,14 @@ export default function Garage() {
           "Type",
           "Mechanic",
           "Check-in",
+          "Check-out",
+          "Duration",
           "Expected",
           "Status",
           "Action",
         ]}
       >
-        {garageOps.map((g) => (
+        {filteredGarageOps.map((g) => (
           <tr key={g.id}>
             <td>
               <b>{g.id}</b>
@@ -74,6 +108,8 @@ export default function Garage() {
             <td>{g.type}</td>
             <td>{g.mechanic}</td>
             <td>{g.checkInDateTime?.replace("T", " ") || "-"}</td>
+            <td>{(g.endDateTime || g.end)?.replace?.("T", " ") || (g.status === "Completed" ? "Completed" : "-")}</td>
+            <td>{durationBetween(g.checkInDateTime || g.start, g.endDateTime || g.end)}</td>
             <td>{g.expectedDeliveryDate || "-"}</td>
             <td>
               <Badge
@@ -219,6 +255,9 @@ function GarageDetail({ op, onClose }) {
           <p>
             <b>Assessment / PO:</b> {op.assessmentId || op.transactionId || "-"}
           </p>
+          <p><b>Check-in:</b> {op.checkInDateTime?.replace?.('T',' ') || op.start?.replace?.('T',' ') || '-'}</p>
+          <p><b>Check-out:</b> {(op.endDateTime || op.end)?.replace?.('T',' ') || '-'}</p>
+          <p><b>Duration:</b> {durationBetween(op.checkInDateTime || op.start, op.endDateTime || op.end)}</p>
           <p>
             <b>Parts used:</b>{" "}
             {op.partsUsed?.map((p) => `${p.name} x${p.qty}`).join(", ") ||

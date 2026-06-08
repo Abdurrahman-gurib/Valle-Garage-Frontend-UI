@@ -276,6 +276,7 @@ function AssessmentDetail({
         qty,
         sellingPrice,
         lineTotal,
+        costPrice: Number(item?.costPrice || 0),
         stockBefore: item?.stock ?? item?.currentStock ?? '-',
         location: item?.location || '-',
         category: item?.category || '',
@@ -342,7 +343,7 @@ function AssessmentDetail({
               <datalist id="assessment-inventory-parts">
                 {matchingParts.map((p) => (
                   <option key={p.id} value={`${p.sku || ''} | ${p.name || ''}`}>
-                    {p.sku || p.id} | {p.name} | Qty: {p.stock ?? p.currentStock ?? 0} | {formatMoney(getPartSellingPrice(p))}
+                    {p.sku || p.id} | {p.name} | Qty: {p.stock ?? p.currentStock ?? 0} | Sell: {formatMoney(getPartSellingPrice(p))}
                   </option>
                 ))}
               </datalist>
@@ -357,7 +358,7 @@ function AssessmentDetail({
         )}
 
         <div className="required-parts-clean-table">
-          <Table headers={['Validate', 'SKU', 'Part', 'Available Qty', 'Issue Qty', 'Line Total', 'Location', 'Action']}>
+          <Table headers={['Validate', 'SKU', 'Part', 'Available Qty', 'Issue Qty', 'Cost Price', 'Selling Price', 'Line Total', 'Location', 'Action']}>
             {parts.map((p, i) => (
               <tr key={`${p.name}-${i}`}>
                 <td>
@@ -386,6 +387,8 @@ function AssessmentDetail({
                     />
                   ) : p.qty}
                 </td>
+                <td>{formatMoney(p.costPrice || 0)}</td>
+                <td>{formatMoney(p.sellingPrice || 0)}</td>
                 <td><b>{formatMoney(getPartLineTotal(p))}</b></td>
                 <td>{p.location || '-'}</td>
                 <td>

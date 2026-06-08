@@ -83,7 +83,7 @@ export default function Vehicles() {
   };
 
   return (
-    <div className="page">
+    <div className="page vehicle-page">
       <PageHeader
         title="Vehicles"
         subtitle="Search a plate number to open the full garage history, assessments, parts issued, mechanics and repair records."

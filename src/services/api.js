@@ -47,7 +47,9 @@ export const api = {
     list: () => apiRequest('/users'),
     mechanics: () => apiRequest('/users/mechanics'),
     create: (payload) => apiRequest('/users', { method: 'POST', body: payload }),
-    update: (id, payload) => apiRequest(`/users/${id}`, { method: 'PATCH', body: payload })
+    update: (id, payload) => apiRequest(`/users/${id}`, { method: 'PATCH', body: payload }),
+    resetPassword: (id, password) => apiRequest(`/users/${id}/reset-password`, { method: 'PATCH', body: { password } }),
+    remove: (id) => apiRequest(`/users/${id}`, { method: 'DELETE' })
   },
   vehicles: {
     list: () => apiRequest('/vehicles'),
@@ -100,6 +102,20 @@ export const api = {
     list: () => apiRequest('/vehicle-out'),
     create: (payload) => apiRequest('/vehicle-out', { method: 'POST', body: payload }),
     update: (id, payload) => apiRequest(`/vehicle-out/${id}`, { method: 'PATCH', body: payload })
+  },
+
+  guestTickets: {
+    list: () => apiRequest('/guest-tickets'),
+    create: (payload) => apiRequest('/guest-tickets', { method: 'POST', body: payload, token: '' }),
+    update: (id, payload) => apiRequest(`/guest-tickets/${id}`, { method: 'PATCH', body: payload })
+  },
+  supportRequests: {
+    list: (filters = {}) => {
+      const q = typeof filters === 'string' ? filters : new URLSearchParams(Object.entries(filters).filter(([,v]) => v !== undefined && v !== '')).toString();
+      return apiRequest(`/support-requests${q ? `?${q}` : ''}`);
+    },
+    create: (payload) => apiRequest('/support-requests', { method: 'POST', body: payload }),
+    update: (id, payload) => apiRequest(`/support-requests/${id}`, { method: 'PATCH', body: payload })
   },
   notifications: {
     list: (role) => apiRequest(role ? `/notifications?role=${role}` : '/notifications')

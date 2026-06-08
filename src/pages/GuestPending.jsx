@@ -63,7 +63,7 @@ export default function GuestPending() {
   }
 
   return (
-    <div className="page">
+    <div className="page guest-pending-page">
       <PageHeader
         title="Guest Pending Tickets"
         subtitle="Guest tickets waiting for mechanic action. Mechanic can view or take the ticket only."
@@ -211,15 +211,23 @@ export default function GuestPending() {
 }
 
 function GuestTicketView({ ticket, onTake }) {
+  const fallbackImage = '/vehicles/quad-450l.jpeg';
+
+  const imageSrc =
+    ticket.imageUrl && String(ticket.imageUrl).trim() !== ''
+      ? ticket.imageUrl
+      : fallbackImage;
+
   return (
     <div className="detail-stack">
-      <div className="vehicle-hero-card">
+      <div className="vehicle-hero-card guest-ticket-hero-card">
         <img
-          src={ticket.imageUrl || '/vehicles/quad-450l.jpeg'}
+          src={imageSrc}
           alt={ticket.plate || 'Guest vehicle'}
+          className="guest-ticket-image"
           onError={(e) => {
             e.currentTarget.onerror = null;
-            e.currentTarget.src = '/vehicles/placeholder-car.png';
+            e.currentTarget.src = fallbackImage;
           }}
         />
 

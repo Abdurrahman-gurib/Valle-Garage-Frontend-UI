@@ -17,6 +17,7 @@ import Reports from './pages/Reports.jsx';
 import Settings from './pages/Settings.jsx';
 import Notifications from './pages/Notifications.jsx';
 import AuditTrail from './pages/AuditTrail.jsx';
+import SupportAssistance from './pages/SupportAssistance.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 function homeFor(role){
@@ -44,6 +45,7 @@ export default function App(){
       <Route path="inventory" element={<Allowed section="inventory"><Inventory/></Allowed>}/>
       <Route path="transactions" element={<Allowed section="transactions"><Transactions/></Allowed>}/>
       <Route path="reports" element={<Allowed section="reports"><Reports/></Allowed>}/>
+      <Route path="support" element={<Allowed section="support"><SupportAssistance/></Allowed>}/>
       <Route path="audit-trail" element={<Allowed section="audit-trail"><AuditTrail/></Allowed>}/>
       <Route path="settings" element={<Allowed section="settings"><Settings/></Allowed>}/>
       <Route path="notifications" element={<Allowed section="notifications"><Notifications/></Allowed>}/>
