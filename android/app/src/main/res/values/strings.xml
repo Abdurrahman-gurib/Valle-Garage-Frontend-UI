@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vallé Garage</string>
+    <string name="title_activity_main">Vallé Garage</string>
+    <string name="package_name">com.valle.garage</string>
+    <string name="custom_url_scheme">com.valle.garage</string>
+</resources>

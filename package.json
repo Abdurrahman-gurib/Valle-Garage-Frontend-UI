@@ -9,13 +9,15 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest",
     "recharts": "^2.15.0",
+    "vite": "latest",
     "xlsx": "^0.18.5"
-  },
-  "devDependencies": {}
+  }
 }
