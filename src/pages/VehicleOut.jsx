@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Field, Input, PageHeader, Table, Badge } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { formatDateTime, secondsBetween, durationLabel, todayInput, formatInput, mauritiusNowDate } from '../utils/time.js';
 
-function fmt(v){ return v ? String(v).replace('T',' ').slice(0,16) : '-'; }
-function secondsBetween(a,b,nowOverride=null){ const s=a?new Date(a):null; const e=b?new Date(b):(nowOverride || new Date()); if(!s || Number.isNaN(s.getTime())) return 0; return Math.max(0, Math.floor((e-s)/1000)); }
-function hoursBetween(a,b,nowOverride=null){ return secondsBetween(a,b,nowOverride)/3600; }
-function niceDuration(seconds){ const s=Math.max(0,Math.floor(seconds||0)); const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const sec=s%60; return `${h}h ${m}m ${sec}s`; }
+function fmt(v){ return formatDateTime(v, false); }
+function niceDuration(seconds){ return durationLabel(seconds); }
 
 export default function VehicleOut(){
   const { vehicles, vehicleOutActivities, addVehicleOutActivity, apiStatus, nowLocalInput, findVehicleByPlate, refreshAll } = useApp();
   const [plateSearch,setPlateSearch]=useState('');
   const [tab,setTab]=useState('out');
   const [message,setMessage]=useState('');
-  const [clock,setClock]=useState(new Date());
-  useEffect(()=>{ const id=setInterval(()=>setClock(new Date()),1000); return ()=>clearInterval(id); },[]);
+  const [clock,setClock]=useState(mauritiusNowDate());
+  useEffect(()=>{ const id=setInterval(()=>setClock(mauritiusNowDate()),1000); return ()=>clearInterval(id); },[]);
   const [form,setForm]=useState({ vehicleId:'', invoiceNumber:'', guideName:'', quadActivity:'', tripDuration:'1 hour', customTripDuration:'', destination:'', driverName:'', startDateTime:nowLocalInput(), endDateTime:'', notes:'' });
 
   const suggestions = useMemo(()=>{
@@ -33,7 +32,7 @@ export default function VehicleOut(){
   },[vehicleOutActivities, selectedVehicle, plateSearch]);
   const totalTimes = selectedHistory.length;
   const totalSeconds = selectedHistory.reduce((s,o)=>s+secondsBetween(o.startDateTime,o.endDateTime,clock),0);
-  const today = nowLocalInput().slice(0,10);
+  const today = todayInput();
   const todaysTrips = vehicleOutActivities.filter(o => String(o.startDateTime || '').slice(0,10) === today);
   const previousTrips = vehicleOutActivities.filter(o => String(o.startDateTime || '').slice(0,10) !== today).slice(0,30);
 
@@ -49,11 +48,11 @@ export default function VehicleOut(){
 
   async function markIn(record){
     // Use direct API if exposed in context via backend fallback is handled by refresh after local call unavailable.
-    const endDateTime = nowLocalInput();
     try {
       const { api } = await import('../services/api.js');
-      await api.vehicleOut.update(record.id, { endDateTime });
-      setMessage(`${record.vehicle} recorded IN at ${endDateTime.replace('T',' ')}.`);
+      const updated = await api.vehicleOut.update(record.id, { recordIn: true });
+      const finalTime = updated?.endDateTime ? fmt(updated.endDateTime) : fmt(formatInput());
+      setMessage(`${record.vehicle} recorded IN at ${finalTime}.`);
       await refreshAll();
     } catch (err) {
       setMessage(err.message || 'Could not update vehicle in time.');

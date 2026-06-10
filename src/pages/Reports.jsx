@@ -5,15 +5,14 @@ import {
 } from 'recharts';
 import { Badge, Button, Card, Field, Input, PageHeader } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { parseAppDate, dayKey, weekKey, monthKey, secondsBetween, durationLabel, formatDateTime as formatMauritiusDateTime, dateParts as mauritiusDateParts, mauritiusNowDate } from '../utils/time.js';
 
 function n(v){ return Number(v || 0); }
 function money(v){ return `MUR ${n(v).toLocaleString(undefined,{maximumFractionDigits:0})}`; }
-function toDate(v){ const d=v?new Date(v):null; return d && !Number.isNaN(d.getTime()) ? d : null; }
-function dayKey(v){ const d=toDate(v)||new Date(); return d.toISOString().slice(0,10); }
-function ym(v){ const d=toDate(v)||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
-function weekKey(v){ const d=toDate(v)||new Date(); const first=new Date(d.getFullYear(),0,1); const diff=Math.floor((d-first)/86400000); return `${d.getFullYear()}-W${String(Math.ceil((diff+first.getDay()+1)/7)).padStart(2,'0')}`; }
-function secs(a,b){ const s=toDate(a); const e=toDate(b)||new Date(); return s ? Math.max(0,Math.floor((e-s)/1000)) : 0; }
-function dur(s){ s=Math.max(0,Math.floor(n(s))); const d=Math.floor(s/86400); s%=86400; const h=Math.floor(s/3600); s%=3600; const m=Math.floor(s/60); const sec=s%60; return d ? `${d}d ${h}h ${m}m ${sec}s` : `${h}h ${m}m ${sec}s`; }
+function toDate(v){ return parseAppDate(v); }
+function ym(v){ return monthKey(v); }
+function secs(a,b){ return secondsBetween(a,b); }
+function dur(s){ return durationLabel(s); }
 function partQty(p){ return n(p?.qty || p?.quantity || 1); }
 function unitCost(p){ return n(p?.costPrice ?? p?.unitCostPrice ?? p?.inventoryItem?.costPrice ?? 0); }
 function unitSelling(p){ return n(p?.sellingPrice ?? p?.unitSellingPrice ?? p?.price ?? p?.lastPrice ?? p?.inventoryItem?.sellingPrice ?? 0); }
@@ -28,28 +27,16 @@ function download(name, text, type='text/csv;charset=utf-8'){ const blob=new Blo
 function printPdf(title){ const old=document.title; document.title=title; window.print(); setTimeout(()=>{document.title=old;},300); }
 
 function formatFullDateTime(value){
-  const d = toDate(value);
-  if(!d) return value || '-';
-  const pad = x => String(x).padStart(2,'0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return formatMauritiusDateTime(value);
 }
 
 function dateParts(value){
-  const d = toDate(value);
-  if(!d) return { date:'-', time:'-', day:'-', month:'-', year:'-' };
-  const pad = x => String(x).padStart(2,'0');
-  return {
-    date: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
-    time: `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
-    day: pad(d.getDate()),
-    month: `${d.getFullYear()}-${pad(d.getMonth()+1)}`,
-    year: `${d.getFullYear()}`,
-  };
+  return mauritiusDateParts(value);
 }
 
 async function exportProfessionalXlsx({ fileName, title, reportType, filters, headers, rows, summaryRows = [], currentUser = {}, sourcePage = 'Executive Reports & System Tracking' }){
   const XLSX = await import('xlsx');
-  const generatedAt = formatFullDateTime(new Date());
+  const generatedAt = formatFullDateTime(mauritiusNowDate());
   const readableReportType = String(reportType || '').replaceAll('-', ' ').toUpperCase();
   const meta = [
     ['VALLÉ GARAGE OPERATIONS'],
@@ -317,7 +304,7 @@ export default function Reports(){
       const dp = dateParts(p.issuedAt || p.date);
       return [formatFullDateTime(p.issuedAt || p.date), dp.date, dp.time, dp.month, dp.year, p.vehicle, p.ticket, p.name, partQty(p), unitCost(p), unitSelling(p), partsCostTotal(p), partsChargedTotal(p), partMargin(p), p.issuedBy || '-', p.source];
     });
-    if(effectiveReport==='low-stock') return analytics.lowStock.map(i=>[formatFullDateTime(new Date()), i.sku, i.name, i.stock, i.reorderLevel, i.supplierName||'', i.category || '', i.location || '']);
+    if(effectiveReport==='low-stock') return analytics.lowStock.map(i=>[formatFullDateTime(mauritiusNowDate()), i.sku, i.name, i.stock, i.reorderLevel, i.supplierName||'', i.category || '', i.location || '']);
     if(effectiveReport==='vehicle-cost') return vehicleCostRows.map(r=>{ const dp = dateParts(r.date); return [formatFullDateTime(r.date), dp.date, dp.time, dp.month, dp.year, r.vehicle, r.garageVisitCount, r.assessmentId, r.repairDone, r.partsText, r.totalCost, r.totalCharged, r.totalMargin, r.mechanic, r.status]; });
     if(effectiveReport==='mechanics') return data.ops.map(g=>{
       const dp = dateParts(g.start || g.createdAt);

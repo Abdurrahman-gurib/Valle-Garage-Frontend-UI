@@ -10,7 +10,6 @@ import {
   PageHeader,
   TextArea,
   Select,
-  Table,
 } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
@@ -357,11 +356,23 @@ function AssessmentDetail({
           </div>
         )}
 
-        <div className="required-parts-clean-table">
-          <Table headers={['Validate', 'SKU', 'Part', 'Available Qty', 'Issue Qty', 'Cost Price', 'Selling Price', 'Line Total', 'Location', 'Action']}>
+        <div className="required-parts-clean-table parts-fit-table" role="table" aria-label="Required and issued assessment parts">
+          <div className="parts-fit-head" role="row">
+            <span>Validate</span>
+            <span>SKU</span>
+            <span>Part</span>
+            <span>Available</span>
+            <span>Qty</span>
+            <span>Cost</span>
+            <span>Selling</span>
+            <span>Total</span>
+            <span>Location</span>
+            <span>Action</span>
+          </div>
+          <div className="parts-fit-body">
             {parts.map((p, i) => (
-              <tr key={`${p.name}-${i}`}>
-                <td>
+              <div className="parts-fit-row" role="row" key={`${p.name}-${i}`}>
+                <div data-label="Validate">
                   {canIssueParts ? (
                     <label className="validate-check">
                       <input type="checkbox" checked={p.validated !== false} onChange={() => toggleValidated(i)} />
@@ -370,11 +381,11 @@ function AssessmentDetail({
                   ) : (
                     <span>{p.validated === false ? 'Not validated' : 'Validated'}</span>
                   )}
-                </td>
-                <td>{p.sku || p.partId || '-'}</td>
-                <td><b>{p.name}</b></td>
-                <td>{p.stockBefore ?? '-'}</td>
-                <td>
+                </div>
+                <div data-label="SKU" className="parts-fit-sku">{p.sku || p.partId || '-'}</div>
+                <div data-label="Part" className="parts-fit-part"><b>{p.name}</b></div>
+                <div data-label="Available">{p.stockBefore ?? '-'}</div>
+                <div data-label="Qty" className="parts-fit-qty">
                   {canIssueParts ? (
                     <Input
                       type="number"
@@ -386,17 +397,17 @@ function AssessmentDetail({
                       }}
                     />
                   ) : p.qty}
-                </td>
-                <td>{formatMoney(p.costPrice || 0)}</td>
-                <td>{formatMoney(p.sellingPrice || 0)}</td>
-                <td><b>{formatMoney(getPartLineTotal(p))}</b></td>
-                <td>{p.location || '-'}</td>
-                <td>
+                </div>
+                <div data-label="Cost">{formatMoney(p.costPrice || 0)}</div>
+                <div data-label="Selling">{formatMoney(p.sellingPrice || 0)}</div>
+                <div data-label="Total"><b>{formatMoney(getPartLineTotal(p))}</b></div>
+                <div data-label="Location">{p.location || '-'}</div>
+                <div data-label="Action" className="parts-fit-action">
                   {canIssueParts ? <button className="part-remove-row" type="button" onClick={() => removePart(i)}>Remove</button> : <small>Locked</small>}
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </Table>
+          </div>
         </div>
       </Card>
 

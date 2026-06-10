@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { Badge, Button, Card, PageHeader } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { parseAppDate, dayKey, weekKey, monthKey, secondsBetween, durationLabel, formatDateTime as formatMauritiusDateTime, mauritiusNowDate } from '../utils/time.js';
 
 function n(v) {
   return Number(v || 0);
@@ -30,49 +31,15 @@ function money(v) {
 }
 
 function toDate(v) {
-  const d = v ? new Date(v) : null;
-  return d && !Number.isNaN(d.getTime()) ? d : null;
-}
-
-function dayKey(v) {
-  const d = toDate(v) || new Date();
-  return d.toISOString().slice(0, 10);
-}
-
-function weekKey(v) {
-  const d = toDate(v) || new Date();
-  const first = new Date(d.getFullYear(), 0, 1);
-  const diff = Math.floor((d.getTime() - first.getTime()) / 86400000);
-  return `${d.getFullYear()}-W${String(
-    Math.ceil((diff + first.getDay() + 1) / 7)
-  ).padStart(2, '0')}`;
-}
-
-function monthKey(v) {
-  const d = toDate(v) || new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function secondsBetween(startValue, endValue) {
-  const start = toDate(startValue);
-  const end = toDate(endValue) || new Date();
-  return start ? Math.max(0, Math.floor((end.getTime() - start.getTime()) / 1000)) : 0;
+  return parseAppDate(v);
 }
 
 function duration(seconds) {
-  let s = Math.max(0, Math.floor(n(seconds)));
-  const d = Math.floor(s / 86400); s %= 86400;
-  const h = Math.floor(s / 3600); s %= 3600;
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return d ? `${d}d ${h}h ${m}m ${sec}s` : `${h}h ${m}m ${sec}s`;
+  return durationLabel(seconds);
 }
 
 function formatDateTime(value) {
-  const d = toDate(value);
-  if (!d) return '-';
-  const pad = (x) => String(x).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return formatMauritiusDateTime(value);
 }
 
 function partQty(part) {

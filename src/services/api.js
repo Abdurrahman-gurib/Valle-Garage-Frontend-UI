@@ -1,4 +1,13 @@
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/$/, '');
+const API_URL = (() => {
+  const configured = import.meta.env.VITE_API_URL;
+  if (configured) return configured.replace(/\/$/, '');
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const protocol = window.location.protocol || 'http:';
+    const host = window.location.hostname;
+    return `${protocol}//${host}:3000/api`;
+  }
+  return 'http://localhost:3000/api';
+})();
 
 export function getToken() {
   return localStorage.getItem('valle-token') || localStorage.getItem('token') || '';
@@ -119,6 +128,9 @@ export const api = {
   },
   notifications: {
     list: (role) => apiRequest(role ? `/notifications?role=${role}` : '/notifications')
+  },
+  time: {
+    now: () => apiRequest('/system-time/now', { token: '' })
   },
   auditTrail: {
     list: (filters = {}) => { const q = new URLSearchParams(Object.entries(filters).filter(([,v]) => v !== undefined && v !== '')).toString(); return apiRequest(`/audit-trail${q ? `?${q}` : ''}`); }

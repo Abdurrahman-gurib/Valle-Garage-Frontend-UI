@@ -2,6 +2,7 @@ import VehicleChecklist from '../components/VehicleChecklist.jsx';
 import MultipleMechanicsSelect from '../components/MultipleMechanicsSelect.jsx';
 import PartsCostTable from '../components/PartsCostTable.jsx';
 import { useEffect, useMemo, useState } from 'react';
+import { formatInput } from '../utils/time.js';
 import { Button, Field, Input, Select, TextArea } from './UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
@@ -11,7 +12,7 @@ const issueSuggestions = ['Brake issue', 'Engine vibration', 'Routine service', 
 const operationTypes = ['Repair', 'Maintenance', 'Servicing', 'Build / Assembly', 'Testing', 'Pre Delivery Inspection'];
 const vehicleCheckItems = ['Brake pads','Oil level','Brake fluid','Suspension','Wheel alignment','Tyre pressure','Radiator / coolant','Battery','Lights','Steering','Drive belt / chain','Leaks','Horn','Mirrors','Safety belt / harness'];
 
-function toLocalInputValue(){ const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
+function toLocalInputValue(){ return formatInput(); }
 function today(){ return toLocalInputValue().slice(0,10); }
 function norm(v){ return String(v || '').trim().toLowerCase(); }
 

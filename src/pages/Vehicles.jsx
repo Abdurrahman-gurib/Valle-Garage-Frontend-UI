@@ -5,7 +5,7 @@ import { Badge, Modal, PageHeader, Table } from '../components/UI.jsx';
 import { VehicleForm, AssessmentForm } from '../components/Forms.jsx';
 
 export default function Vehicles() {
-  const { vehicles = [], vehicleCatalog = [], can, setLastVehicleForAssessment } = useApp();
+  const { vehicles = [], vehicleCatalog = [], garageOps = [], assessments = [], can, setLastVehicleForAssessment } = useApp();
   const navigate = useNavigate();
 
   const [modal, setModal] = useState(null);
@@ -13,6 +13,50 @@ export default function Vehicles() {
 
   const getVehiclePlate = (v) => {
     return v?.plate || v?.plateNumber || '';
+  };
+
+
+  const displayPlate = (plate) => String(plate || '').replace(/\s*-\s*$/, '').trim();
+
+  const normalizePlateKey = (plate) => String(plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+  const formatDateTime = (value) => {
+    if (!value || value === 'Pending') return '-';
+    return String(value).replace('T', ' ').slice(0, 16);
+  };
+
+  const getLatestVehicleTimes = (vehicle) => {
+    const plateKey = normalizePlateKey(getVehiclePlate(vehicle));
+    const vehicleId = vehicle?.id || vehicle?.dbId;
+    const relatedGarage = (garageOps || []).filter((g) => {
+      const sameId = vehicleId && (g.vehicleId === vehicleId || g.dbVehicleId === vehicleId);
+      const samePlate = plateKey && normalizePlateKey(g.vehicle) === plateKey;
+      return sameId || samePlate;
+    });
+    const relatedAssessments = (assessments || []).filter((a) => {
+      const sameId = vehicleId && (a.vehicleId === vehicleId || a.dbVehicleId === vehicleId);
+      const samePlate = plateKey && normalizePlateKey(a.vehicle) === plateKey;
+      return sameId || samePlate;
+    });
+
+    const checkIns = [
+      vehicle?.checkInDateTime,
+      ...relatedGarage.map((g) => g.checkInDateTime || g.start || g.createdAt),
+      ...relatedAssessments.map((a) => a.checkInDateTime || a.createdAt),
+    ].filter(Boolean);
+    const checkOuts = relatedGarage
+      .map((g) => g.endDateTime || (g.end && g.end !== 'Pending' ? g.end : ''))
+      .filter(Boolean);
+
+    const latest = (values) => values
+      .map((v) => ({ raw: v, date: new Date(v) }))
+      .filter((x) => !Number.isNaN(x.date.getTime()))
+      .sort((a, b) => b.date - a.date)[0]?.raw || '';
+
+    return {
+      checkIn: latest(checkIns),
+      checkOut: latest(checkOuts),
+    };
   };
 
   const getVehicleImage = (v) => {
@@ -143,19 +187,21 @@ export default function Vehicles() {
           'Internal/External',
           'Owner / Company',
           'Status',
-          'Check-in',
+          'Latest Check-in',
+          'Latest Check-out',
           'Action',
         ]}
       >
         {shown.map((v) => {
           const plate = getVehiclePlate(v);
+          const latestTimes = getLatestVehicleTimes(v);
 
           return (
             <tr key={v.id || plate}>
               <td>
-                <b>{plate || '-'}</b>
+                <b>{displayPlate(plate) || '-'}</b>
                 <br />
-                <small>{v.vin || '-'}</small>
+                {v.vin ? <small>{v.vin}</small> : null}
               </td>
 
               <td>
@@ -197,7 +243,9 @@ export default function Vehicles() {
                 </Badge>
               </td>
 
-              <td>{v.checkInDateTime?.replace('T', ' ') || '-'}</td>
+              <td>{formatDateTime(latestTimes.checkIn)}</td>
+
+              <td>{formatDateTime(latestTimes.checkOut)}</td>
 
               <td>
                 <div className="table-action-stack">
