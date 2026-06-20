@@ -18,7 +18,19 @@ function durationBetween(start, end){ const s=start?new Date(start):null; const 
 function toDate(v){ const d=v?new Date(v):null; return d && !Number.isNaN(d.getTime()) ? d : null; }
 function startDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 function endDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(),23,59,59,999); }
-function periodOk(v, period){ const d=toDate(v); if(!d) return false; const now=new Date(); let s=null,e=null; if(period==='today'){s=startDay(now);e=endDay(now);} if(period==='week'){s=startDay(new Date(now.getFullYear(),now.getMonth(),now.getDate()-6));e=endDay(now);} if(period==='month'){s=new Date(now.getFullYear(),now.getMonth(),1);e=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);} if(period==='year'){s=new Date(now.getFullYear(),0,1);e=new Date(now.getFullYear(),11,31,23,59,59,999);} return (!s||d>=s)&&(!e||d<=e); }
+function periodOk(v, period, filters={}){
+  if(period==='all') return true;
+  const d=toDate(v); if(!d) return false;
+  const now=new Date(); let s=null,e=null;
+  if(period==='today'){s=startDay(now);e=endDay(now);}
+  if(period==='week'){s=startDay(new Date(now.getFullYear(),now.getMonth(),now.getDate()-6));e=endDay(now);}
+  if(period==='month'){s=new Date(now.getFullYear(),now.getMonth(),1);e=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);}
+  if(period==='year'){s=new Date(now.getFullYear(),0,1);e=new Date(now.getFullYear(),11,31,23,59,59,999);}
+  if(period==='manualDate' && filters.manualDate){ const md=new Date(filters.manualDate+'T00:00:00'); s=startDay(md); e=endDay(md);}
+  if(period==='manualMonth' && filters.manualMonth){ const [yy,mm]=filters.manualMonth.split('-').map(Number); s=new Date(yy,mm-1,1); e=new Date(yy,mm,0,23,59,59,999);}
+  if(period==='manualYear' && filters.manualYear){ const yy=Number(filters.manualYear); s=new Date(yy,0,1); e=new Date(yy,11,31,23,59,59,999);}
+  return (!s||d>=s)&&(!e||d<=e);
+}
 async function exportGarageXlsx(rows, period){
   const XLSX = await import('xlsx');
   const aoa = [
@@ -37,8 +49,12 @@ async function exportGarageXlsx(rows, period){
 export default function Garage() {
   const { garageOps, transactions, assessments } = useApp();
   const [modal, setModal] = useState(null);
-  const [reportPeriod,setReportPeriod]=useState('week');
-  const filteredGarageOps = useMemo(()=>garageOps.filter(g=>periodOk(g.checkInDateTime || g.start || g.createdAt, reportPeriod)),[garageOps,reportPeriod]);
+  const [reportPeriod,setReportPeriod]=useState('all');
+  const [manualDate,setManualDate]=useState('');
+  const [manualMonth,setManualMonth]=useState('');
+  const [manualYear,setManualYear]=useState(String(new Date().getFullYear()));
+  const garageFilters={manualDate,manualMonth,manualYear};
+  const filteredGarageOps = useMemo(()=>garageOps.filter(g=>periodOk(g.checkInDateTime || g.start || g.createdAt, reportPeriod, garageFilters)),[garageOps,reportPeriod,manualDate,manualMonth,manualYear]);
   const buildRequests = transactions.filter(
     (t) =>
       ["External Vehicle Order", "Repair / Service Billing"].includes(t.type) &&
@@ -74,17 +90,26 @@ export default function Garage() {
           onOpen={(t) => setModal({ type: "fromTx", item: t })}
         />
       )}
-      <div className="history-toolbar">
+      <div className="history-toolbar garage-filter-toolbar">
         <Select value={reportPeriod} onChange={(e)=>setReportPeriod(e.target.value)}>
+          <option value="all">All Garage Work</option>
           <option value="today">Today Only</option>
           <option value="week">Last 7 Days</option>
           <option value="month">Current Month</option>
           <option value="year">Current Year</option>
+          <option value="manualDate">Manual Date</option>
+          <option value="manualMonth">Manual Month</option>
+          <option value="manualYear">Manual Year</option>
         </Select>
+        {reportPeriod==='manualDate' && <Input type="date" value={manualDate} onChange={(e)=>setManualDate(e.target.value)} />}
+        {reportPeriod==='manualMonth' && <Input type="month" value={manualMonth} onChange={(e)=>setManualMonth(e.target.value)} />}
+        {reportPeriod==='manualYear' && <Input type="number" min="2020" max="2100" value={manualYear} onChange={(e)=>setManualYear(e.target.value)} />}
         <Button variant="secondary" onClick={()=>exportGarageXlsx(filteredGarageOps, reportPeriod)}>Export Garage Work XLSX</Button>
       </div>
-      <Table
-        headers={[
+     <div className="garage-work-table-shell force-visible-scroll">
+  <Table
+    className="garage-wide-table"
+    headers={[
           "Process",
           "Vehicle",
           "Assessment/PO",
@@ -133,6 +158,7 @@ export default function Garage() {
           </tr>
         ))}
       </Table>
+      </div>
       {modal?.type === "new" && (
         <Modal title="Start Garage Process" onClose={() => setModal(null)} wide>
           <GarageOpForm onDone={() => setModal(null)} />

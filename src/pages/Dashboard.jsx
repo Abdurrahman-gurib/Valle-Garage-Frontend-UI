@@ -15,6 +15,7 @@ import {
   ScatterChart,
   ResponsiveContainer,
   Tooltip,
+  Legend,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -75,6 +76,108 @@ function group(rows, keyFn, valueFn = () => 1) {
       plate: label,
     }))
     .sort((a, b) => b.value - a.value);
+}
+
+function shortInventoryLabel(value){
+  const text = String(value || '-').trim();
+  if(text.length <= 18) return text;
+  return `${text.slice(0, 8)}…${text.slice(-7)}`;
+}
+function cleanInventoryItem(item){
+  return {
+    ...item,
+    sku: item?.sku || '',
+    name: item?.name || item?.part || '',
+    category: item?.category || 'Uncategorised',
+    stock: n(item?.stock ?? item?.currentStock ?? 0),
+    currentStock: n(item?.stock ?? item?.currentStock ?? 0),
+    reorderLevel: n(item?.reorderLevel ?? 0),
+    costPrice: n(item?.costPrice ?? 0),
+    sellingPrice: n(item?.sellingPrice ?? item?.lastPrice ?? item?.price ?? 0),
+    location: item?.location || '',
+    supplierName: item?.supplierName || item?.supplier || '',
+  };
+}
+function LowStockTooltip({ active, payload, label }){
+  if(!active || !payload?.length) return null;
+  const row = payload[0]?.payload || {};
+  return <div className="analytics-tooltip"><b>{row.fullLabel || label}</b><span>Current stock: {row.stock}</span><span>Reorder level: {row.reorder}</span><span>Part: {row.name || '-'}</span><span>Location: {row.location || '-'}</span></div>;
+}
+function StoreChartSet({ stockRiskData, categoryChartData, lowStockData, zeroStockData, titlePrefix = '', onExport }){
+  return <>
+    <ChartCard title={`${titlePrefix}Stock Risk Overview`} subtitle="Live DB count by stock risk level. No estimated values." badge="Inventory">
+      {stockRiskData.some((x)=>x.value>0) ? <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={stockRiskData} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{stockRiskData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer> : <EmptyChart/>}
+    </ChartCard>
+    <ChartCard title={`${titlePrefix}Parts by Category`} subtitle="Category distribution from InventoryItem table." badge="Store">
+      {categoryChartData.length ? <ResponsiveContainer width="100%" height="100%"><BarChart data={categoryChartData} layout="vertical" margin={{left:80,right:24,top:8,bottom:8}}><CartesianGrid strokeDasharray="3 3"/><XAxis type="number" allowDecimals={false}/><YAxis type="category" dataKey="label" width={120} tick={{fontSize:11}}/><Tooltip content={<AnalyticsTooltip valueLabel="Parts" xAxisName="Category" yAxisName="Parts Count" />}/><Legend/><Bar dataKey="value" name="Parts count" fill="#6f3cff" radius={[0,8,8,0]}/></BarChart></ResponsiveContainer> : <EmptyChart/>}
+    </ChartCard>
+    <ChartCard title={`${titlePrefix}Low Stock Items`} subtitle="All items at or below reorder level. Export includes SKU, part, stock, reorder level, category and location." badge="Low stock" onExport={onExport ? ()=>onExport(`${titlePrefix.toLowerCase().replace(/\s+/g,'-')}low-stock-items`, lowStockData) : undefined}>
+      <BarList rows={(lowStockData || []).map(row => ({...row, value: row.stock, displayValue:`Stock ${row.stock} / Reorder ${row.reorder}`}))} />
+    </ChartCard>
+    <ChartCard title={`${titlePrefix}Zero Stock Items`} subtitle="All parts where current stock is zero. Export gives the complete zero-stock list." badge="Zero stock" onExport={onExport ? ()=>onExport(`${titlePrefix.toLowerCase().replace(/\s+/g,'-')}zero-stock-items`, zeroStockData) : undefined}>
+      <BarList rows={(zeroStockData || []).map(row => ({...row, value: row.reorder || 1, displayValue:`Stock 0 / Reorder ${row.reorder}`}))} />
+    </ChartCard>
+  </>;
+}
+
+
+function normPlate(v){
+  return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function vehicleTypeForPlate(plate, vehicles){
+  const key = normPlate(plate);
+  const found = (vehicles || []).find((v) => normPlate(v.plate || v.plateNumber) === key);
+  return String(found?.vehicleType || found?.type || 'Unknown').toUpperCase();
+}
+
+function recordVehicleType(record, vehicles){
+  return vehicleTypeForPlate(record?.vehicle || record?.vehiclePlate || record?.plate, vehicles);
+}
+function routeName(record){
+  const raw = record?.destinationRoute || record?.destination || '';
+  const value = String(raw || '').trim();
+  return value && value !== '-' ? value : 'Not specified';
+}
+function bikingTypeName(record){
+  const raw = record?.bikingVehicleType || record?.quadActivity || record?.activityType || '';
+  const value = String(raw || '').trim();
+  const lower = value.toLowerCase();
+  if(lower.includes('quad') && lower.includes('single')) return 'Quad Single';
+  if(lower.includes('quad') && lower.includes('double')) return 'Quad Double';
+  if(lower === 'quad' || lower.includes('quad')) return 'Quad Single';
+  if(lower.includes('buggy')) return 'Buggy';
+  return 'Unspecified Type';
+}
+const ROUTE_TYPE_SERIES = ['Quad Single', 'Quad Double', 'Buggy', 'Unspecified Type'];
+function routeByBikingTypeRows(rows){
+  const map = {};
+  (rows || []).forEach((activity) => {
+    const route = routeName(activity);
+    const type = ROUTE_TYPE_SERIES.includes(bikingTypeName(activity)) ? bikingTypeName(activity) : 'Unspecified Type';
+    if(!map[route]) map[route] = { label: route, value: 0, total: 0, 'Quad Single': 0, 'Quad Double': 0, Buggy: 0, 'Unspecified Type': 0 };
+    map[route][type] += 1;
+    map[route].total += 1;
+    map[route].value += 1;
+    map[route].displayValue = `${map[route].total} trip(s)`;
+  });
+  return Object.values(map).sort((a,b)=>b.total-a.total);
+}
+
+function fuelLitresValue(fuel){
+  return n(fuel?.fuelLitres ?? fuel?.litres ?? fuel?.quantity ?? 0);
+}
+
+function hourBucket(value){
+  const d = toDate(value);
+  if(!d) return '-';
+  return `${String(d.getHours()).padStart(2, '0')}:00`;
+}
+
+function exactTimeLabel(value){
+  const d = toDate(value);
+  if(!d) return '-';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 }
 
 function chrono(rows, keyFn, valueFn = () => 1) {
@@ -476,6 +579,12 @@ export default function Dashboard() {
     mechanicWork: 'week',
     parts: 'month',
     garageTracking: 'week',
+    vehicleInOutOverview: 'today',
+    vehicleFleetType: 'today',
+    vehicleRouteUsage: 'today',
+    vehiclePeakTime: 'today',
+    fuelTypeDashboard: 'today',
+    fuelVisitVehiclePlate: 'today',
   });
 
   const [customRanges, setCustomRanges] = useState({
@@ -488,6 +597,12 @@ export default function Dashboard() {
     mechanicWork: {},
     parts: {},
     garageTracking: {},
+    vehicleInOutOverview: {},
+    vehicleFleetType: {},
+    vehicleRouteUsage: {},
+    vehiclePeakTime: {},
+    fuelTypeDashboard: {},
+    fuelVisitVehiclePlate: {},
   });
   const [liveNow, setLiveNow] = useState(() => Date.now());
   useEffect(() => { const timer = setInterval(() => setLiveNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
@@ -509,6 +624,22 @@ export default function Dashboard() {
   );
 
   const lowStock = inventory.filter((item) => n(item.stock) <= n(item.reorderLevel));
+
+  const inventoryClean = useMemo(() => (inventory || []).map(cleanInventoryItem), [inventory]);
+  const inventoryLowStock = useMemo(() => inventoryClean.filter((item) => item.stock <= item.reorderLevel), [inventoryClean]);
+  const stockRiskData = useMemo(() => [
+    { label: 'OK', value: inventoryClean.filter((item) => item.stock > item.reorderLevel).length },
+    { label: 'Low stock', value: inventoryLowStock.length },
+    { label: 'Zero stock', value: inventoryClean.filter((item) => item.stock <= 0).length },
+  ], [inventoryClean, inventoryLowStock]);
+  const categoryChartData = useMemo(() => group(inventoryClean, (item) => item.category || 'Uncategorised', () => 1).slice(0, 8), [inventoryClean]);
+  const lowStockData = useMemo(() => inventoryLowStock
+    .map((item) => ({ label: shortInventoryLabel(item.sku || item.name || '-'), fullLabel: `${item.sku || '-'} - ${item.name || ''}`, name: item.name, stock: item.stock, reorder: item.reorderLevel, category: item.category, location: item.location, sku: item.sku }))
+    .sort((a,b)=>(a.stock-b.stock)||(b.reorder-a.reorder)), [inventoryLowStock]);
+  const zeroStockData = useMemo(() => inventoryClean
+    .filter((item) => item.stock <= 0)
+    .map((item) => ({ label: shortInventoryLabel(item.sku || item.name || '-'), fullLabel: `${item.sku || '-'} - ${item.name || ''}`, name: item.name, stock: item.stock, reorder: item.reorderLevel, category: item.category, location: item.location, sku: item.sku }))
+    .sort((a,b)=>(b.reorder-a.reorder)||String(a.label).localeCompare(String(b.label))), [inventoryClean]);
 
   function rowsForPeriod(rows, dateField, period, range = {}) {
     const ok = periodFilter(period, range);
@@ -610,20 +741,78 @@ export default function Dashboard() {
       ? rowsForPeriod(garageOps, 'start', chartPeriods.garageTracking || chartPeriods.repairs, customRanges.garageTracking || customRanges.repairs)
       : rowsForPeriod(garageOps, 'createdAt', chartPeriods.garageTracking || chartPeriods.repairs, customRanges.garageTracking || customRanges.repairs);
 
+    const overviewOutRows = rowsForPeriod(vehicleOutActivities, 'startDateTime', chartPeriods.vehicleInOutOverview, customRanges.vehicleInOutOverview);
+    const fleetRows = rowsForPeriod(vehicleOutActivities, 'startDateTime', chartPeriods.vehicleFleetType, customRanges.vehicleFleetType);
+    const routeRows = rowsForPeriod(vehicleOutActivities, 'startDateTime', chartPeriods.vehicleRouteUsage, customRanges.vehicleRouteUsage);
+    const peakRows = rowsForPeriod(vehicleOutActivities, 'startDateTime', chartPeriods.vehiclePeakTime, customRanges.vehiclePeakTime);
+    const fuelTypeRows = rowsForPeriod(fuelConsumptions, 'recordedAt', chartPeriods.fuelTypeDashboard, customRanges.fuelTypeDashboard);
+    const fuelPlateRows = rowsForPeriod(fuelConsumptions, 'recordedAt', chartPeriods.fuelVisitVehiclePlate, customRanges.fuelVisitVehiclePlate);
+
     return {
+      vehicleInOutOverview: trendWithVehicleBreakdown(
+        overviewOutRows,
+        chartPeriods.vehicleInOutOverview,
+        (activity) => activity.startDateTime,
+        (activity) => activity.vehicle || activity.vehiclePlate || 'Unknown',
+        () => 1,
+        (value) => `${Number(value).toLocaleString()} OUT record(s)`
+      ).map((row) => {
+        const label = row.label;
+        const inCount = overviewOutRows.filter((activity) => periodKey(chartPeriods.vehicleInOutOverview, activity.endDateTime) === label && activity.endDateTime).length;
+        return { ...row, out: row.value, in: inCount, stillOut: Math.max(0, row.value - inCount), displayValue: `${row.value} OUT / ${inCount} IN` };
+      }).slice(-14),
+
+      vehicleFleetTypeAdmin: group(
+        fleetRows,
+        (activity) => recordVehicleType(activity, vehicles),
+        () => 1
+      ).slice(0, 10),
+
+      routeUsageAdmin: routeByBikingTypeRows(routeRows).slice(0, 10),
+
+      peakOutInAdmin: group(
+        peakRows.flatMap((activity) => [
+          { label: exactTimeLabel(activity.startDateTime), kind: 'OUT', sortKey: String(activity.startDateTime || ''), plate: activity.vehicle || activity.vehiclePlate || '-' },
+          ...(activity.endDateTime ? [{ label: exactTimeLabel(activity.endDateTime), kind: 'IN', sortKey: String(activity.endDateTime || ''), plate: activity.vehicle || activity.vehiclePlate || '-' }] : [])
+        ]),
+        (row) => row.label,
+        () => 1
+      ).map((row) => {
+        const label = row.label;
+        return {
+          ...row,
+          OUT: peakRows.filter((activity) => exactTimeLabel(activity.startDateTime) === label).length,
+          IN: peakRows.filter((activity) => exactTimeLabel(activity.endDateTime) === label).length,
+          outVehicles: peakRows.filter((activity) => exactTimeLabel(activity.startDateTime) === label).map((a)=>a.vehicle || a.vehiclePlate || '-').join(', '),
+          inVehicles: peakRows.filter((activity) => exactTimeLabel(activity.endDateTime) === label).map((a)=>a.vehicle || a.vehiclePlate || '-').join(', '),
+        };
+      }).filter((row) => row.label !== '-').sort((a,b)=>String(a.label).localeCompare(String(b.label))),
+
+      fuelByVehicleTypeAdmin: group(
+        fuelTypeRows,
+        (fuel) => recordVehicleType(fuel, vehicles),
+        fuelLitresValue
+      ).slice(0, 10),
+
+      fuelVisitsByPlateAdmin: group(
+        fuelPlateRows,
+        (fuel) => fuel.vehicle || fuel.vehiclePlate || fuel.plate || 'Unknown plate',
+        () => 1
+      ).slice(0, 15),
+
       fuelTrend: trendWithVehicleBreakdown(
         fuelTrendRows,
         chartPeriods.dailyFuel,
         (fuel) => fuel.recordedAt,
         (fuel) => fuel.vehicle || fuel.vehiclePlate || fuel.plate || 'Unknown',
-        (fuel) => n(fuel.fuelLitres),
+        fuelLitresValue,
         (value) => `${Number(value).toFixed(1)} L`
       ).slice(-14),
 
       fuelByVehicle: group(
         fuelRows,
         (fuel) => fuel.vehicle || fuel.vehiclePlate || fuel.plate || 'Unknown',
-        (fuel) => n(fuel.fuelLitres)
+        fuelLitresValue
       ).slice(0, 12),
 
       repairs: trendWithVehicleBreakdown(
@@ -639,11 +828,20 @@ export default function Dashboard() {
         partsForCost,
         (part) => part.vehicle || part.vehiclePlate || 'Unknown',
         partCost
-      ).slice(0, 12).map((row) => ({
-        ...row,
-        costLabel: money(row.value),
-        partsLabel: (partsByPlate[row.label] || []).slice(0, 4).join(', ') || 'No parts listed',
-      })),
+      ).slice(0, 12).map((row) => {
+        const vehicleAssessments = assessments.filter((a) => (a.vehicle || a.vehiclePlate || 'Unknown') === row.label && periodFilter(chartPeriods.repairCost, customRanges.repairCost)(a.createdAt));
+        const vehicleGarageOps = costOps.filter((g) => (g.vehicle || g.vehiclePlate || 'Unknown') === row.label);
+        const repairCount = Math.max(0, vehicleAssessments.length || vehicleGarageOps.length);
+        return {
+          ...row,
+          repairCount,
+          costValue: row.value,
+          costLabel: money(row.value),
+          displayValue: money(row.value),
+          ticketCountLabel: `Repair/assessment count: ${repairCount}`,
+          partsLabel: (partsByPlate[row.label] || []).slice(0, 4).join(', ') || 'No parts listed',
+        };
+      }),
 
       repairCostTrend: trendWithVehicleBreakdown(
         partsForCost,
@@ -721,6 +919,7 @@ export default function Dashboard() {
       chartPeriods,
       customRanges,
       liveNow,
+      vehicles,
     ]
   );
 
@@ -739,7 +938,7 @@ export default function Dashboard() {
   const partsMarginToday = partsChargedToday - repairCostToday;
 
   const fuelLitresToday = fuelToday.reduce(
-    (sum, fuel) => sum + n(fuel.fuelLitres),
+    (sum, fuel) => sum + fuelLitresValue(fuel),
     0
   );
 
@@ -799,6 +998,12 @@ export default function Dashboard() {
       'garage-work-extraction-tracking': 'garageTracking',
       'store-mechanic-ticket-workload': 'mechanicWork',
       'store-assessment-parts-cost': 'repairCost',
+      'admin-vehicle-activity-overview': 'vehicleInOutOverview',
+      'admin-fleet-by-type': 'vehicleFleetType',
+      'admin-route-usage': 'vehicleRouteUsage',
+      'admin-peak-out-in-time': 'vehiclePeakTime',
+      'admin-fuel-type-usage': 'fuelTypeDashboard',
+      'admin-fuel-visits-by-plate': 'fuelVisitVehiclePlate',
     };
     const key = keyMap[name] || 'dailyFuel';
     const period = chartPeriods[key];
@@ -894,6 +1099,27 @@ export default function Dashboard() {
             <span><b>Garage visits today:</b> {garageVisitsToday.length}</span>
           </div>
         </Card>
+
+        <div className="dashboard-chart-grid dashboard-modern-chart-grid mechanic-analytics-grid">
+          <ChartCard title="Assessment Status" subtitle="Live assessment count by current status." badge="Mechanic">
+            <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={group(assessments, (a)=>a.status || 'Unknown', () => 1)} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{group(assessments, (a)=>a.status || 'Unknown', () => 1).map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer>
+          </ChartCard>
+          <ChartCard title="Parts Given by Vehicle" subtitle="Issued assessment parts grouped by vehicle plate." badge="Parts">
+            <BarList rows={group(assessments.flatMap((a)=>(a.parts || []).map((p)=>({...p, vehicle:a.vehicle || a.vehiclePlate || 'Unknown'}))), (p)=>p.vehicle, (p)=>n(p.qty || p.quantity || 1)).slice(0,10)} />
+          </ChartCard>
+          <ChartCard title="Completed Tickets" subtitle="Completed assessment tickets by date." badge="Completed">
+            <ResponsiveContainer width="100%" height="100%"><LineChart data={chrono(assessments.filter((a)=>String(a.status||'').toLowerCase()==='completed'), (a)=>dayKey(a.updatedAt || a.createdAt), () => 1).slice(-14)}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip content={<AnalyticsTooltip valueLabel="Completed" xAxisName="Date" yAxisName="Completed Tickets"/>}/><Line dataKey="value" stroke="#24f66f" strokeWidth={3}/></LineChart></ResponsiveContainer>
+          </ChartCard>
+          <ChartCard title="Guest Ticket Intake" subtitle="Today and pending drop-off visibility." badge="Guests">
+            <ResponsiveContainer width="100%" height="100%"><BarChart data={[{label:'Today', value:guestTicketsToday.length},{label:'Pending', value:openGuests.length},{label:'Garage visits', value:garageVisitsToday.length}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#6f3cff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
+          </ChartCard>
+          <ChartCard title="Garage Visits Today" subtitle="Every garage visit recorded today from live DB data." badge="Visits">
+            <ResponsiveContainer width="100%" height="100%"><BarChart data={[{label:'Garage visits today', value:garageVisitsToday.length},{label:'Open garage work', value:openGarageWorkLive.length},{label:'Open assessments', value:openAssessmentsLive.length}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#2997ff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
+          </ChartCard>
+          <ChartCard title="Open Garage Work" subtitle="Active garage work grouped by current status." badge="Open">
+            <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={group(openGarageWorkLive, (g)=>g.status || 'Open', () => 1)} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{group(openGarageWorkLive, (g)=>g.status || 'Open', () => 1).map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer>
+          </ChartCard>
+        </div>
       </div>
     );
   }
@@ -978,14 +1204,8 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="dashboard-chart-grid">
-          <ChartCard
-            title="Low Stock Risk"
-            subtitle="Items at or below reorder level."
-            badge="Stock"
-          >
-            <BarList rows={storeCharts.lowStock} />
-          </ChartCard>
+        <div className="dashboard-chart-grid dashboard-modern-chart-grid">
+          <StoreChartSet stockRiskData={stockRiskData} categoryChartData={categoryChartData} lowStockData={lowStockData} zeroStockData={zeroStockData} onExport={exportSimple} />
 
           <ChartCard
             title="Top 25 Parts Used / Issued"
@@ -1055,6 +1275,23 @@ export default function Dashboard() {
             onExport={() => exportSimple('store-stock-value-by-category', storeCharts.stockValueByCategory)}
           >
             <BarList rows={storeCharts.stockValueByCategory} cost />
+          </ChartCard>
+
+          <ChartCard
+            title="Assessment Parts Ticket Flow Today"
+            subtitle="Parts issued, completed assessment tickets and reopened tickets from live assessment data."
+            badge="Tickets"
+            onExport={() => exportSimple('store-assessment-parts-ticket-flow-today', [
+              { label:'Parts issued today', value:storePartsIssuedToday.length },
+              { label:'Completed assessments today', value:assessments.filter((a)=>isToday(a.updatedAt || a.createdAt) && String(a.status||'').toLowerCase()==='completed').length },
+              { label:'Reopened tickets today', value:assessments.filter((a)=>isToday(a.reopenedAt || a.updatedAt || a.createdAt) && (a.reopenReason || String(a.status||'').toLowerCase()==='reopened')).length }
+            ])}
+          >
+            <ResponsiveContainer width="100%" height="100%"><BarChart data={[
+              {label:'Parts issued', value:storePartsIssuedToday.length},
+              {label:'Completed', value:assessments.filter((a)=>isToday(a.updatedAt || a.createdAt) && String(a.status||'').toLowerCase()==='completed').length},
+              {label:'Reopened', value:assessments.filter((a)=>isToday(a.reopenedAt || a.updatedAt || a.createdAt) && (a.reopenReason || String(a.status||'').toLowerCase()==='reopened')).length}
+            ]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#ff8b00" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
           </ChartCard>
         </div>
 
@@ -1134,7 +1371,11 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="dashboard-chart-grid">
+      <div className="dashboard-chart-grid dashboard-modern-chart-grid admin-store-visibility-grid">
+        <StoreChartSet stockRiskData={stockRiskData} categoryChartData={categoryChartData} lowStockData={lowStockData} zeroStockData={zeroStockData} titlePrefix="Store " onExport={exportSimple} />
+      </div>
+
+      <div className="dashboard-chart-grid dashboard-modern-chart-grid">
         <ChartCard
           title="Fuel Consumption Trend"
           subtitle="Hover to see the date and litres from live DB records."
@@ -1349,15 +1590,16 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   type="number"
-                  dataKey="value"
-                  name="Parts Cost"
-                  label={{ value: 'X Axis: Parts Cost (MUR)', position: 'insideBottom', offset: -3 }}
+                  dataKey="repairCount"
+                  name="Repair Count"
+                  allowDecimals={false}
+                  label={{ value: 'X Axis: Repair / Assessment Count', position: 'insideBottom', offset: -3 }}
                 />
                 <YAxis
                   type="number"
-                  dataKey="value"
-                  name="Repair Cost"
-                  label={{ value: 'Y Axis: Repair Cost (MUR)', angle: -90, position: 'insideLeft' }}
+                  dataKey="costValue"
+                  name="Parts Cost"
+                  label={{ value: 'Y Axis: Parts Cost (MUR)', angle: -90, position: 'insideLeft' }}
                 />
                 <Tooltip content={<AnalyticsTooltip valueLabel="Repair Cost" xAxisName="Vehicle Plate" yAxisName="Parts Cost" />} />
                 <Scatter data={charts.repairCostByVehicle} fill="#6f3cff" />
@@ -1369,15 +1611,144 @@ export default function Dashboard() {
         </ChartCard>
 
         <ChartCard
-          title="Low Stock Risk"
-          subtitle="Items at or below reorder level."
-          badge="Stock"
+          title="Admin Vehicle Activity Overview"
+          subtitle="OUT, IN and still-out records from vehicle management with full period filters."
+          period={chartPeriods.vehicleInOutOverview}
+          onPeriodChange={(value) => setChartPeriod('vehicleInOutOverview', value)}
+          customRange={customRanges.vehicleInOutOverview}
+          onCustomRangeChange={(value) => setCustomRange('vehicleInOutOverview', value)}
+          onExport={() => exportSimple('admin-vehicle-activity-overview', charts.vehicleInOutOverview)}
+        >
+          {charts.vehicleInOutOverview.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={charts.vehicleInOutOverview}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Line dataKey="out" name="Vehicle OUT" stroke="#6f3cff" strokeWidth={3} />
+                <Line dataKey="in" name="Vehicle IN" stroke="#24f66f" strokeWidth={3} />
+                <Line dataKey="stillOut" name="Still OUT" stroke="#ff315f" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : <EmptyChart />}
+        </ChartCard>
+
+        <ChartCard
+          title="Admin Fleet by Type"
+          subtitle="Vehicle categories involved in OUT/IN activity for the selected period."
+          period={chartPeriods.vehicleFleetType}
+          onPeriodChange={(value) => setChartPeriod('vehicleFleetType', value)}
+          customRange={customRanges.vehicleFleetType}
+          onCustomRangeChange={(value) => setCustomRange('vehicleFleetType', value)}
+          onExport={() => exportSimple('admin-fleet-by-type', charts.vehicleFleetTypeAdmin)}
+        >
+          {charts.vehicleFleetTypeAdmin.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={charts.vehicleFleetTypeAdmin} dataKey="value" nameKey="label" innerRadius={55} outerRadius={90}>
+                  {charts.vehicleFleetTypeAdmin.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                </Pie>
+                <Tooltip content={<AnalyticsTooltip valueLabel="Trips" xAxisName="Vehicle Type" yAxisName="Trip Count" />} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : <EmptyChart />}
+        </ChartCard>
+
+        <ChartCard
+          title="Admin Route Usage by Biking Type"
+          subtitle="Adventure/Discovery split by Quad Single, Quad Double, Quad and Buggy for the selected period."
+          period={chartPeriods.vehicleRouteUsage}
+          onPeriodChange={(value) => setChartPeriod('vehicleRouteUsage', value)}
+          customRange={customRanges.vehicleRouteUsage}
+          onCustomRangeChange={(value) => setCustomRange('vehicleRouteUsage', value)}
+          onExport={() => exportSimple('admin-route-usage-by-biking-type', charts.routeUsageAdmin)}
+        >
+          {charts.routeUsageAdmin.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={charts.routeUsageAdmin} margin={{ left: 10, right: 20, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" />
+                <YAxis allowDecimals={false} />
+                <Tooltip content={<AnalyticsTooltip valueLabel="Trip count" xAxisName="Route" yAxisName="Trips" />} />
+                <Legend />
+                <Bar dataKey="Quad Single" stackId="route" fill={COLORS[1]} />
+                <Bar dataKey="Quad Double" stackId="route" fill={COLORS[0]} />
+                <Bar dataKey="Buggy" stackId="route" fill={COLORS[3]} />
+                <Bar dataKey="Unspecified Type" stackId="route" fill={COLORS[2]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <EmptyChart />}
+        </ChartCard>
+
+        <ChartCard
+          title="Admin Exact OUT / IN Timeline"
+          subtitle="Exact minute/second visibility for vehicle OUT and IN activity. No hour rounding."
+          period={chartPeriods.vehiclePeakTime}
+          onPeriodChange={(value) => setChartPeriod('vehiclePeakTime', value)}
+          customRange={customRanges.vehiclePeakTime}
+          onCustomRangeChange={(value) => setCustomRange('vehiclePeakTime', value)}
+          onExport={() => exportSimple('admin-peak-out-in-time', charts.peakOutInAdmin)}
+        >
+          {charts.peakOutInAdmin.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={charts.peakOutInAdmin}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" interval={0} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Line type="linear" dataKey="OUT" name="OUT count" stroke="#6f3cff" strokeWidth={3} dot={{ r: 5 }} />
+                <Line type="linear" dataKey="IN" name="IN count" stroke="#24f66f" strokeWidth={3} dot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : <EmptyChart />}
+        </ChartCard>
+
+        <ChartCard
+          title="Admin Fuel by Vehicle Type"
+          subtitle="Fuel litres grouped by vehicle type/category from live fuel records."
+          period={chartPeriods.fuelTypeDashboard}
+          onPeriodChange={(value) => setChartPeriod('fuelTypeDashboard', value)}
+          customRange={customRanges.fuelTypeDashboard}
+          onCustomRangeChange={(value) => setCustomRange('fuelTypeDashboard', value)}
+          onExport={() => exportSimple('admin-fuel-type-usage', charts.fuelByVehicleTypeAdmin)}
+        >
+          {charts.fuelByVehicleTypeAdmin.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={charts.fuelByVehicleTypeAdmin} dataKey="value" nameKey="label" innerRadius={55} outerRadius={90}>
+                  {charts.fuelByVehicleTypeAdmin.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                </Pie>
+                <Tooltip content={<AnalyticsTooltip valueLabel="Fuel" suffix=" L" xAxisName="Vehicle Type" yAxisName="Fuel Litres" />} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : <EmptyChart />}
+        </ChartCard>
+
+        <ChartCard
+          title="Admin Fuel Visits by Plate"
+          subtitle="Count of fuel-up records by exact vehicle plate."
+          period={chartPeriods.fuelVisitVehiclePlate}
+          onPeriodChange={(value) => setChartPeriod('fuelVisitVehiclePlate', value)}
+          customRange={customRanges.fuelVisitVehiclePlate}
+          onCustomRangeChange={(value) => setCustomRange('fuelVisitVehiclePlate', value)}
+          onExport={() => exportSimple('admin-fuel-visits-by-plate', charts.fuelVisitsByPlateAdmin)}
+        >
+          <BarList rows={charts.fuelVisitsByPlateAdmin} />
+        </ChartCard>
+
+        <ChartCard
+          title="Store Stock Value by Category"
+          subtitle="Exact inventory cost value grouped by category from live InventoryItem stock."
+          badge="Value"
+          onExport={() => exportSimple('store-stock-value-by-category', group((inventory || []).map(cleanInventoryItem), (item) => item.category || 'Uncategorised', (item) => n(item.currentStock) * n(item.costPrice)).slice(0, 12))}
         >
           <BarList
-            rows={lowStock.slice(0, 12).map((item) => ({
-              label: item.name,
-              value: n(item.stock),
+            rows={group((inventory || []).map(cleanInventoryItem), (item) => item.category || 'Uncategorised', (item) => n(item.currentStock) * n(item.costPrice)).slice(0, 12).map((row) => ({
+              ...row,
+              displayValue: money(row.value),
             }))}
+            cost
           />
         </ChartCard>
       </div>

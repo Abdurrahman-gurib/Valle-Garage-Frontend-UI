@@ -6,8 +6,14 @@ import { formatInput } from '../utils/time.js';
 import { Button, Field, Input, Select, TextArea } from './UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
 
+function cleanDisplayText(value) {
+  return String(value || '').replace(/VallÃ©/g, 'Vallé').replace(/Advenature/g, 'Adventure');
+}
 
-const vehicleTypeSuggestions = ['Quad', 'Buggy', 'Jeep', 'UTV', 'Motorcycle', 'Other'];
+
+const vehicleTypeSuggestions = ['Quad', 'Buggy', 'Jeep', 'Heavy Duty', 'Tools', 'Car', 'UTV', 'Motorcycle', 'Truck', 'Trailer', 'Equipment', 'Other'];
+function canonicalVehicleType(value){ const t=String(value||'').trim().toUpperCase(); const map={QUAD:'Quad',BUGGY:'Buggy',JEEP:'Jeep','HEAVY DUTY':'Heavy Duty',TOOLS:'Tools',CAR:'Car',UTV:'UTV',MOTORCYCLE:'Motorcycle',TRUCK:'Truck',TRAILER:'Trailer',EQUIPMENT:'Equipment'}; return map[t] || (value || 'Other'); }
+function canonicalOwnership(value){ const t=String(value||'').trim().toUpperCase(); if(t==='INTERNAL') return 'Internal'; if(t==='EXTERNAL'||t==='CUSTOMER_ORDER') return 'External'; return value || 'Internal'; }
 const issueSuggestions = ['Brake issue', 'Engine vibration', 'Routine service', 'Electrical fault', 'Tyre replacement', 'Oil leak', 'Transmission noise', 'Accident damage', 'Battery issue', 'Other'];
 const operationTypes = ['Repair', 'Maintenance', 'Servicing', 'Build / Assembly', 'Testing', 'Pre Delivery Inspection'];
 const vehicleCheckItems = ['Brake pads','Oil level','Brake fluid','Suspension','Wheel alignment','Tyre pressure','Radiator / coolant','Battery','Lights','Steering','Drive belt / chain','Leaks','Horn','Mirrors','Safety belt / harness'];
@@ -26,9 +32,9 @@ export function VehicleForm({ onDone, transaction, initialVehicle }) {
   const [form, setForm] = useState(() => ({
     plate: transaction ? `BUILD-${Math.floor(100 + Math.random() * 899)}` : initialVehicle?.plate || '',
     vin: initialVehicle?.vin || '',
-    type: initialVehicle?.type || (transaction?.type?.includes('Vehicle') ? 'Quad' : 'Quad'),
+    type: canonicalVehicleType(initialVehicle?.type || initialVehicle?.vehicleType || (transaction?.type?.includes('Vehicle') ? 'Quad' : 'Quad')),
     customType: initialVehicle?.customType || '',
-    ownership: initialVehicle?.ownership || (transaction ? 'External' : 'Internal'),
+    ownership: canonicalOwnership(initialVehicle?.ownership || (transaction ? 'External' : 'Internal')),
     owner: initialVehicle?.owner || transaction?.supplier || 'Vallé Adventure Park',
     companyName: initialVehicle?.companyName || transaction?.supplier || '',
     deliveryPersonName: initialVehicle?.deliveryPersonName || '',
@@ -71,6 +77,8 @@ const [selectedMechanics, setSelectedMechanics] = useState(initialMechanicIds);
     const q = norm(form.plate);
     if(!q || q.length < 1) return [];
     const all = [...vehicles, ...vehicleCatalog];
+    const exact = all.find(v => String(v.plate || v.plateNumber || '').toUpperCase().replace(/[^A-Z0-9]/g,'') === String(form.plate || '').toUpperCase().replace(/[^A-Z0-9]/g,''));
+    if(exact) return [];
     const seen = new Set();
     return all.filter(v => {
       const key = String(v.plate || v.plateNumber || '').toUpperCase();
@@ -87,7 +95,7 @@ const [selectedMechanics, setSelectedMechanics] = useState(initialMechanicIds);
   }, [form.plate, vehicles, vehicleCatalog]);
   function applyVehicle(v){
     const src = findVehicleByPlate(v.plate || v.plateNumber) || v;
-    setForm(prev => ({ ...prev, ...src, plate: src.plate || src.plateNumber || prev.plate, vin: src.vin || prev.vin, type: src.type || src.vehicleType || prev.type, ownership: src.ownership || prev.ownership, owner: src.owner || prev.owner, companyName: src.companyName || prev.companyName, deliveryPersonName: src.deliveryPersonName || prev.deliveryPersonName, contactNumber: src.contactNumber || prev.contactNumber, email: src.email || prev.email, model: src.model || prev.model, cc: src.cc || prev.cc, imageUrl: src.imageUrl || prev.imageUrl, hours: src.hours ?? prev.hours, status: src.status || prev.status }));
+    setForm(prev => ({ ...prev, ...src, plate: src.plate || src.plateNumber || prev.plate, vin: src.vin || prev.vin, type: canonicalVehicleType(src.type || src.vehicleType || prev.type), ownership: canonicalOwnership(src.ownership || prev.ownership), owner: src.owner || prev.owner, companyName: src.companyName || prev.companyName, deliveryPersonName: src.deliveryPersonName || prev.deliveryPersonName, contactNumber: src.contactNumber || prev.contactNumber, email: src.email || prev.email, model: src.model || prev.model, cc: src.cc || prev.cc, imageUrl: src.imageUrl || prev.imageUrl, hours: src.hours ?? prev.hours, status: src.status || prev.status }));
     setDirty(false);
   }
   useEffect(() => {
@@ -172,7 +180,7 @@ const [selectedMechanics, setSelectedMechanics] = useState(initialMechanicIds);
       <Field label="Email"><Input type="email" value={form.email} onChange={e=>change('email',e.target.value)}/></Field>
     </>}
     {!isExternal && <Field label="Vehicle Owner"><Input value={form.owner} onChange={e=>change('owner',e.target.value)}/></Field>}
-    <Field label="Check-in Date & Time"><Input type="datetime-local" value={form.checkInDateTime} onChange={e=>change('checkInDateTime',e.target.value)}/></Field>
+    <Field label="Check-in Date & Time"><div className="locked-time-display"><b>{String(form.checkInDateTime || toLocalInputValue()).replace('T',' ')}</b><small>Locked current Mauritius date/time. Not editable.</small></div></Field>
     
     <Field label="Status"><Select value={form.status} onChange={e=>change('status',e.target.value)}><option>Active</option><option>Under Repair</option><option>Out of Service</option><option>Build in Progress</option><option>Built and Testing</option><option>Delivered</option></Select></Field>
     <Field label="Expected Delivery Date"><Input type="date" value={form.expectedDeliveryDate} onChange={e=>change('expectedDeliveryDate',e.target.value)}/></Field>
@@ -462,7 +470,7 @@ async function addPart() {
         <div className="vehicle-selected-summary form-actions">
           <b>{selectedVehicleInfo.plate}</b>
           <span>{selectedVehicleInfo.model || selectedVehicleInfo.type || 'Vehicle'} {selectedVehicleInfo.cc ? `• ${selectedVehicleInfo.cc}` : ''}</span>
-          <small>Status: {selectedVehicleInfo.status || '-'} • Owner: {selectedVehicleInfo.owner || selectedVehicleInfo.companyName || '-'}</small>
+          <small>Status: {selectedVehicleInfo.status || '-'} • Owner: {cleanDisplayText(selectedVehicleInfo.owner || selectedVehicleInfo.companyName || '-')}</small>
         </div>
       )}
 <Field label="Issue Detected">

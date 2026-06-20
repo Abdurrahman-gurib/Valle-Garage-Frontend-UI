@@ -10,9 +10,9 @@ const nav = [
   { to:'/assessments', key:'assessments', label:'Assessments', icon:'✓' },
   { to:'/inventory', key:'inventory', label:'Parts', icon:'▥' },
   { to:'/garage', key:'garage', label:'Garage Work', icon:'⚙' },
+  { to:'/external-parts', key:'external-parts', label:'Parts Distribution / Sell', icon:'⇄' },
   { to:'/fuel', key:'fuel', label:'Fuel System', icon:'◉' },
   { to:'/vehicle-out', key:'vehicle-out', label:'Vehicles In / Out', icon:'↗' },
-  { to:'/transactions', key:'transactions', label:'Transactions', icon:'▤' },
   { to:'/reports', key:'reports', label:'Reports', icon:'▦' },
   { to:'/support', key:'support', label:'Support Assistance', icon:'?' },
   { to:'/audit-trail', key:'audit-trail', label:'Audit Trail', icon:'☷' },
@@ -40,6 +40,7 @@ export default function AppLayout() {
         </div>
       )}
       <Outlet />
+      <footer className="app-copyright">© ABDURRAHMAN NOOR-UL-HAQQ 2026 — VALLÉ ADVENTURE PARK</footer>
     </main>
   </div>;
 }

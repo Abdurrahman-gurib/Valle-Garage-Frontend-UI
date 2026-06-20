@@ -12,7 +12,7 @@ import Garage from './pages/Garage.jsx';
 import FuelConsumption from './pages/FuelConsumption.jsx';
 import VehicleOut from './pages/VehicleOut.jsx';
 import Inventory from './pages/Inventory.jsx';
-import Transactions from './pages/Transactions.jsx';
+import ExternalPartsIssue from './pages/ExternalPartsIssue.jsx';
 import Reports from './pages/Reports.jsx';
 import Settings from './pages/Settings.jsx';
 import Notifications from './pages/Notifications.jsx';
@@ -43,7 +43,7 @@ export default function App(){
       <Route path="vehicle-out" element={<Allowed section="vehicle-out"><VehicleOut/></Allowed>}/>
       <Route path="guest-pending" element={<Allowed section="guest-pending"><GuestPending/></Allowed>}/>
       <Route path="inventory" element={<Allowed section="inventory"><Inventory/></Allowed>}/>
-      <Route path="transactions" element={<Allowed section="transactions"><Transactions/></Allowed>}/>
+      <Route path="external-parts" element={<Allowed section="external-parts"><ExternalPartsIssue/></Allowed>}/>
       <Route path="reports" element={<Allowed section="reports"><Reports/></Allowed>}/>
       <Route path="support" element={<Allowed section="support"><SupportAssistance/></Allowed>}/>
       <Route path="audit-trail" element={<Allowed section="audit-trail"><AuditTrail/></Allowed>}/>

@@ -2,15 +2,15 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api, clearSession, saveSession } from '../services/api.js';
 import { vehicleCatalog } from '../data/vehicleCatalog.js';
-import { formatInput, todayInput, formatDateTime, parseAppDate } from '../utils/time.js';
+import { formatInput, todayInput, formatDateTime, parseAppDate, secondsBetween, durationLabel } from '../utils/time.js';
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
 
 const roleAccess = {
-  admin: ['dashboard', 'vehicles', 'assessments', 'inventory', 'garage', 'fuel', 'vehicle-out', 'transactions', 'reports', 'support', 'audit-trail', 'settings', 'notifications'],
+  admin: ['dashboard', 'vehicles', 'assessments', 'inventory', 'external-parts', 'garage', 'fuel', 'vehicle-out', 'reports', 'support', 'audit-trail', 'settings', 'notifications'],
   mechanic: ['dashboard', 'vehicles', 'assessments', 'garage', 'guest-pending', 'support', 'notifications'],
-  store: ['dashboard', 'vehicles', 'assessments', 'inventory', 'transactions', 'reports', 'support', 'notifications'],
+  store: ['dashboard', 'vehicles', 'assessments', 'inventory', 'external-parts', 'reports', 'support', 'notifications'],
   fuel: ['fuel', 'reports', 'support', 'notifications'],
   vehicle_manager: ['vehicle-out', 'reports', 'support', 'notifications'],
   guest: ['guest']
@@ -38,10 +38,47 @@ export const todayLocal = () => todayInput();
 const normalizeDate = value => value ? formatInput(value) : '';
 const normPlate = p => String(p || '').trim().toUpperCase();
 const catalogByPlate = plate => vehicleCatalog.find(v => normPlate(v.plate) === normPlate(plate));
+const cleanText = (value) => String(value || '')
+  .replace(/VallÃ©/g, 'Vallé')
+  .replace(/VallÃ¨/g, 'Vallè')
+  .replace(/Advenature/g, 'Adventure');
 
 function normalizeUser(u) { const role = apiToRole[u.role] || u.role || 'mechanic'; return { id: u.id, name: u.name, email: (u.email || '').replace('@valle.com','@vallepark.com'), role, label: roleLabel[role] || role, password: u.password || '' }; }
 function enrichFromCatalog(obj) { const c = catalogByPlate(obj.plate || obj.plateNumber); return c ? { ...c, ...obj, model: obj.model || c.model, cc: obj.cc || c.cc, imageUrl: obj.imageUrl || c.imageUrl } : obj; }
-function normalizeVehicle(v) { const base = { id: v.id, dbId: v.id, plate: v.plateNumber || v.plate || '', vin: v.vin || '', type: v.vehicleType || v.type || 'Quad', customType: v.customType || '', ownership: v.ownership === 'EXTERNAL' ? 'External' : v.ownership === 'CUSTOMER_ORDER' ? 'External' : v.ownership || 'Internal', owner: v.ownerName || v.owner || 'Vallé Adventure Park', companyName: v.companyName || '', deliveryPersonName: v.deliveryPersonName || '', contactNumber: v.contactNumber || '', email: v.email || '', manufacturer: v.manufacturer || 'CFMOTO', status: apiToStatus[v.status] || v.status || 'Active', hours: Number(v.currentHourMeter ?? v.hours ?? 0), nextService: Number(v.nextServiceDueAtHours ?? v.nextService ?? 100), checkInDateTime: normalizeDate(v.checkInDateTime), expectedDeliveryDate: v.expectedDeliveryDate ? String(v.expectedDeliveryDate).slice(0,10) : '', notes: v.notes || '', mechanic: v.mechanic || '', mechanicIds: arr(v.mechanicIds || v.assignedMechanicIds || v.vehicleMechanics).map(m => typeof m === 'string' ? m : (m.mechanicId || m.userId || m.mechanic?.id || m.id)).filter(Boolean), mechanicNames: arr(v.mechanicNames || v.vehicleMechanics).map(m => typeof m === 'string' ? m : (m.mechanic?.name || m.name)).filter(Boolean), sourceTransactionId: v.transactionId || v.sourceTransactionId || '', model: v.model || '', cc: v.cc || '', imageUrl: v.imageUrl || '' }; return enrichFromCatalog(base); }
+function normalizeVehicle(v) {
+  // Production accuracy rule: display only DB-provided operational fields.
+  // Do not silently inject catalogue/default model, CC, owner, manufacturer, service-hour,
+  // or status values into reports/charts. A missing DB value must remain blank/Unknown.
+  const base = {
+    id: v.id,
+    dbId: v.id,
+    plate: v.plateNumber || v.plate || '',
+    vin: v.vin || '',
+    type: v.vehicleType || v.type || 'Unknown',
+    customType: v.customType || '',
+    ownership: v.ownership === 'EXTERNAL' ? 'External' : v.ownership === 'CUSTOMER_ORDER' ? 'External' : v.ownership || '',
+    owner: cleanText(v.ownerName || v.owner || ''),
+    companyName: cleanText(v.companyName || ''),
+    deliveryPersonName: v.deliveryPersonName || '',
+    contactNumber: v.contactNumber || '',
+    email: v.email || '',
+    manufacturer: v.manufacturer || '',
+    status: apiToStatus[v.status] || v.status || 'Unknown',
+    hours: Number(v.currentHourMeter ?? v.hours ?? 0),
+    nextService: Number(v.nextServiceDueAtHours ?? v.nextService ?? 0),
+    checkInDateTime: normalizeDate(v.checkInDateTime),
+    expectedDeliveryDate: v.expectedDeliveryDate ? String(v.expectedDeliveryDate).slice(0,10) : '',
+    notes: v.notes || '',
+    mechanic: v.mechanic || '',
+    mechanicIds: arr(v.mechanicIds || v.assignedMechanicIds || v.vehicleMechanics).map(m => typeof m === 'string' ? m : (m.mechanicId || m.userId || m.mechanic?.id || m.id)).filter(Boolean),
+    mechanicNames: arr(v.mechanicNames || v.vehicleMechanics).map(m => typeof m === 'string' ? m : (m.mechanic?.name || m.name)).filter(Boolean),
+    sourceTransactionId: v.transactionId || v.sourceTransactionId || '',
+    model: v.model || '',
+    cc: v.cc || '',
+    imageUrl: v.imageUrl || ''
+  };
+  return base;
+}
 
 function vehicleKey(v) {
   const plate = normPlate(v?.plate || v?.plateNumber || v?.vehiclePlate || '');
@@ -96,7 +133,7 @@ function normalizeSupportRequest(s) { return { id:s.id, dbId:s.id, ticketNo:s.ti
 function normalizeGuestTicket(t) { return { id:t.id, dbId:t.id, name:t.name || t.deliveryPersonName || '', deliveryPersonName:t.deliveryPersonName || t.name || '', plate:String(t.plate || t.plateNumber || '').toUpperCase(), vin:t.vin || '', model:t.model || '', cc:t.cc || '', type:t.vehicleType || t.type || 'Quad', contactNumber:t.contactNumber || '', email:t.email || '', notes:t.notes || '', imageUrl:t.imageUrl || '', status:t.status || 'Pending', takenBy:t.takenBy || '', vehicleId:t.vehicleId || '', assessmentId:t.assessmentId || '', createdAt:normalizeDate(t.createdAt) || t.createdAt || '' }; }
 
 function normalizeFuel(f) { const v = f.vehicle ? normalizeVehicle(f.vehicle) : null; return { id:f.id, vehicleId:f.vehicleId, vehicle:v?.plate || f.vehiclePlate || f.vehicle || '', fuelType:f.fuelType || '', meterType:f.meterType || 'KM', meterReading:Number(f.meterReading || 0), fuelLitres:Number(f.fuelLitres || 0), notes:f.notes || '', recordedAt:normalizeDate(f.recordedAt), recordedBy:f.recordedBy?.name || '' }; }
-function normalizeVehicleOut(o) { const v = o.vehicle ? normalizeVehicle(o.vehicle) : null; const start = normalizeDate(o.startDateTime); const end = normalizeDate(o.endDateTime); const durationSeconds = Number(o.durationSeconds || 0); return { id:o.id, vehicleId:o.vehicleId, vehicle:v?.plate || o.vehiclePlate || o.vehicle || '', activityType:o.activityType || 'Activity', destination:o.destination || '', driverName:o.driverName || '', invoiceNumber:o.invoiceNumber || '', guideName:o.guideName || '', quadActivity:o.quadActivity || '', tripDuration:o.tripDuration || '', startDateTime:start, endDateTime:end, durationSeconds, durationLabel:o.durationLabel || '', isCurrentlyOut: !end, notes:o.notes || '', recordedBy:o.recordedBy?.name || '' }; }
+function normalizeVehicleOut(o) { const v = o.vehicle ? normalizeVehicle(o.vehicle) : null; const start = normalizeDate(o.startDateTime); const end = normalizeDate(o.endDateTime); const durationSeconds = Number(o.durationSeconds ?? secondsBetween(start, end)); const bikingVehicleType = o.bikingVehicleType || o.quadActivity || o.activityType || ''; const destinationRoute = o.destinationRoute || o.destination || ''; return { id:o.id, vehicleId:o.vehicleId, vehicle:v?.plate || o.vehiclePlate || o.vehicle || '', activityType:o.activityType || bikingVehicleType || 'Activity', destination:o.destination || destinationRoute || '', destinationRoute, driverName:o.driverName || '', invoiceNumber:o.invoiceNumber || '', guideName:o.guideName || '', quadActivity:o.quadActivity || bikingVehicleType || '', bikingVehicleType, tripDuration:o.tripDuration || '', startDateTime:start, endDateTime:end, durationSeconds, durationLabel:o.durationLabel || durationLabel(durationSeconds), isCurrentlyOut: !end, notes:o.notes || '', recordedBy:o.recordedBy?.name || '' }; }
 
 function vehiclePayload(v) { return { plateNumber: v.plate, vin: v.vin || undefined, vehicleType: v.type === 'Other' ? v.customType || 'Other' : v.type, ownership: v.ownership === 'External' ? (v.sourceTransactionId ? 'CUSTOMER_ORDER' : 'EXTERNAL') : 'INTERNAL', ownerName: v.owner || undefined, companyName: v.companyName || undefined, deliveryPersonName: v.deliveryPersonName || undefined, contactNumber: v.contactNumber || undefined, email: v.email || undefined, manufacturer: v.manufacturer || 'CFMOTO', model: v.model || undefined, cc: v.cc || undefined, imageUrl: v.imageUrl || undefined, status: statusToApi[v.status] || 'ACTIVE', currentHourMeter: Number(v.hours || 0), checkInDateTime: v.checkInDateTime || undefined, expectedDeliveryDate: v.expectedDeliveryDate || undefined, mechanicIds: arr(v.mechanicIds), mechanicNames: arr(v.mechanicNames), vehicleChecks: v.vehicleChecks || undefined, notes: [v.notes, v.model ? `Model: ${v.model}` : '', v.cc ? `CC: ${v.cc}` : ''].filter(Boolean).join(' | '), transactionId: v.sourceTransactionId || undefined }; }
 function assessmentPayload(data) { return { vehicleId: data.vehicleId, status: assessmentToApi[data.status] || 'OPEN', issuesDetected: data.issue, conclusion: data.conclusion || undefined, requiredParts: arr(data.parts).map(p => ({ partName: p.name, name:p.name, quantity: Number(p.qty || 1), qty:Number(p.qty||1), partId: p.partId, inventoryItemId:p.partId, sku:p.sku, costPrice:p.costPrice, sellingPrice:p.sellingPrice, lineCostTotal:p.lineCostTotal, lineSellingTotal:p.lineSellingTotal, lineTotal:p.lineSellingTotal || p.lineTotal, margin:p.margin })), photos: arr(data.photos) }; }
@@ -486,8 +523,24 @@ export function AppProvider({ children }) {
     await safe('update inventory item', () => api.inventory.update(item?.dbId || id, { sku:merged.sku, name:merged.name || merged.part, category:merged.category, currentStock:Number(merged.stock ?? merged.currentStock ?? 0), reorderLevel:Number(merged.reorderLevel||0), costPrice:Number(merged.costPrice||0), sellingPrice:Number(merged.sellingPrice ?? merged.lastPrice ?? 0), supplierName:merged.supplier || merged.supplierName, supplierEmail:merged.supplierEmail, location:merged.location }), refreshAll);
   }
   async function addInventoryStock(id, quantity, reason='New stock input'){ const item=inventory.find(i=>i.id===id || i.dbId===id); setInventory(prev=>prev.map(i=>i.id===id || i.dbId===id ? {...i, stock:Number(i.stock||0)+Number(quantity||0)} : i)); await safe('add inventory stock', () => api.inventory.addStock(item?.dbId || id, { quantity:Number(quantity||0), reason }), refreshAll); }
-  async function addFuelConsumption(data){ const vehicle=vehicles.find(v=>v.id===data.vehicleId || v.dbId===data.vehicleId); const local={ id:`FUEL-${Date.now()}`, ...data, vehicle:vehicle?.plate || data.vehicle, recordedAt:data.recordedAt || nowLocalInput() }; setFuelConsumptions(prev=>[local,...prev]); await safe('add fuel consumption', () => api.fuelConsumptions.create({ vehicleId:vehicle?.dbId || data.vehicleId, fuelType:data.fuelType, meterType:data.meterType, meterReading:Number(data.meterReading || 0), fuelLitres:Number(data.fuelLitres || 0), notes:data.notes, recordedAt:data.recordedAt || undefined, vehiclePlate: vehicle?.plate || data.vehicle }), refreshAll); return local; }
-  async function addVehicleOutActivity(data){ const vehicle=vehicles.find(v=>v.id===data.vehicleId || v.dbId===data.vehicleId); const local={ id:`OUT-${Date.now()}`, ...data, vehicle:vehicle?.plate || data.vehicle, startDateTime:data.startDateTime || nowLocalInput() }; setVehicleOutActivities(prev=>[local,...prev]); await safe('add vehicle out activity', () => api.vehicleOut.create({ vehicleId:vehicle?.dbId || data.vehicleId, activityType:data.activityType, destination:data.destination, driverName:data.driverName, invoiceNumber:data.invoiceNumber, guideName:data.guideName, quadActivity:data.quadActivity, tripDuration:data.tripDuration, startDateTime:data.startDateTime || undefined, endDateTime:data.endDateTime || undefined, vehiclePlate: vehicle?.plate || data.vehicle, notes:data.notes }), refreshAll); return local; }
+  async function addFuelConsumption(data){
+    const vehicle=vehicles.find(v=>v.id===data.vehicleId || v.dbId===data.vehicleId);
+    const saved = await safe('add fuel consumption', () => api.fuelConsumptions.create({ vehicleId:vehicle?.dbId || data.vehicleId, fuelType:data.fuelType, meterType:data.meterType, meterReading:Number(data.meterReading || 0), fuelLitres:Number(data.fuelLitres || 0), notes:data.notes, vehiclePlate: vehicle?.plate || data.vehicle }), null);
+    if(!saved) throw new Error('Fuel record was not saved to the database. No local/fake fuel row was created.');
+    const normalized = normalizeFuel(saved);
+    setFuelConsumptions(prev=>[normalized, ...prev.filter(x=>x.id!==normalized.id)]);
+    await refreshAll();
+    return normalized;
+  }
+  async function addVehicleOutActivity(data){
+    const vehicle=vehicles.find(v=>v.id===data.vehicleId || v.dbId===data.vehicleId);
+    const saved = await safe('add vehicle out activity', () => api.vehicleOut.create({ vehicleId:vehicle?.dbId || data.vehicleId, activityType:data.activityType || data.bikingVehicleType, destination:data.destination || data.destinationRoute, destinationRoute:data.destinationRoute, bikingVehicleType:data.bikingVehicleType, driverName:data.driverName, invoiceNumber:data.invoiceNumber, guideName:data.guideName, quadActivity:data.quadActivity || data.bikingVehicleType, tripDuration:data.tripDuration, vehiclePlate: vehicle?.plate || data.vehicle, notes:data.notes }), null);
+    if(!saved) throw new Error('Vehicle OUT was not saved to the database. No local/fake vehicle-out row was created.');
+    const normalized = normalizeVehicleOut(saved);
+    setVehicleOutActivities(prev=>[normalized, ...prev.filter(x=>x.id!==normalized.id)]);
+    await refreshAll();
+    return normalized;
+  }
 
 
   async function createSupportRequest(payload) {
@@ -511,7 +564,7 @@ export function AppProvider({ children }) {
   }
 
   const frequentAlerts = useMemo(() => { const counts={}; garageOps.forEach(g=>{ const key=normPlate(g.vehicle); if(key) counts[key]=(counts[key]||0)+1; }); return Object.entries(counts).filter(([,c])=>c>=3).map(([plate,c])=>`Attention: ${plate} has ${c} garage records and may need deeper inspection.`); }, [garageOps]);
-  const searchIndex = useMemo(() => [ ...vehicles.map(item=>({ type:'Vehicle', label:`${item.plate} - ${item.model || item.type}`, path:`/vehicles/${encodeURIComponent(item.plate)}`, keywords:JSON.stringify(item) })), ...vehicleCatalog.slice(0,80).map(item=>({ type:'Vehicle Master', label:`${item.plate} - ${item.model || item.type}`, path:`/vehicles/${encodeURIComponent(item.plate)}`, keywords:JSON.stringify(item) })), ...assessments.map(item=>({ type:'Assessment', label:`${item.id} - ${item.vehicle}`, path:'/assessments', keywords:JSON.stringify(item) })), ...inventory.map(item=>({ type:'Part', label:`${item.sku} - ${item.name}`, path:'/inventory', keywords:JSON.stringify(item) })), ...garageOps.map(item=>({ type:'Garage Work', label:`${item.id} - ${item.vehicle}`, path:'/garage', keywords:JSON.stringify(item) })), ...transactions.map(item=>({ type:'Transaction', label:`${item.id} - ${item.item}`, path:'/transactions', keywords:JSON.stringify(item) })) ], [vehicles, assessments, inventory, garageOps, transactions]);
+  const searchIndex = useMemo(() => [ ...vehicles.map(item=>({ type:'Vehicle', label:`${item.plate} - ${item.model || item.type}`, path:`/vehicles/${encodeURIComponent(item.plate)}`, keywords:JSON.stringify(item) })), ...assessments.map(item=>({ type:'Assessment', label:`${item.id} - ${item.vehicle}`, path:'/assessments', keywords:JSON.stringify(item) })), ...inventory.map(item=>({ type:'Part', label:`${item.sku} - ${item.name}`, path:'/inventory', keywords:JSON.stringify(item) })), ...garageOps.map(item=>({ type:'Garage Work', label:`${item.id} - ${item.vehicle}`, path:'/garage', keywords:JSON.stringify(item) })) ], [vehicles, assessments, inventory, garageOps, transactions]);
 
   const value = { apiStatus, appLoading: loadingCount > 0, appMessage, notify, clearAppMessage, reportAnalytics, supportRequests, createSupportRequest, updateSupportRequest, currentUser, users, mechanics, lastVehicleForAssessment, setLastVehicleForAssessment, addUser, updateUserAdmin, resetUserPassword, removeUserLogin, login, guestLogin, logout, can, refreshAll, vehicles, addVehicle, updateVehicle, createVehicleFromTransaction, inventory, setInventory, createInventoryItem, updateInventoryItem, addInventoryStock, fuelConsumptions, addFuelConsumption, vehicleOutActivities, addVehicleOutActivity, assessments, addAssessment, updateAssessment, reopenAssessment, completeAssessment, issuePartsForAssessment, garageOps, addGarageOp, updateGarageOp, transactions, createTransaction, createPO, updateTransaction, notifications:[...frequentAlerts,...notifications], setNotifications, guestTickets, updateGuestTicket, createGuestTicket, takeGuestTicket, vehicleCatalog, findVehicleByPlate, getVehicleHistory, exportVehicleHistory, searchIndex, fileNames:(list)=>Array.from(list||[]).map(f=>f.name).join(', '), nowLocalInput, todayLocal };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

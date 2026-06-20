@@ -4652,3 +4652,2449 @@ body,
     grid-template-columns: 96px minmax(0, 1fr) !important;
   }
 }
+
+
+/* ================================
+   V65 production polish: professional responsive tables, locked time, dropdowns
+   ================================ */
+.table-wrap,
+.table-responsive{
+  width:100% !important;
+  overflow-x:auto !important;
+  overflow-y:hidden;
+  border-radius:20px !important;
+  border:1px solid var(--line) !important;
+  background:white !important;
+}
+.table-wrap table{
+  width:100% !important;
+  min-width:1120px !important;
+  table-layout:auto !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+}
+.table-wrap th,
+.table-wrap td{
+  padding:12px 14px !important;
+  vertical-align:middle !important;
+  text-align:left !important;
+  white-space:normal !important;
+  word-break:normal !important;
+  overflow-wrap:normal !important;
+  hyphens:none !important;
+  line-height:1.28 !important;
+  font-size:13px !important;
+}
+.table-wrap th{
+  font-weight:1000 !important;
+  letter-spacing:0 !important;
+  min-width:96px !important;
+}
+.table-wrap th:last-child,
+.table-wrap td:last-child{
+  min-width:118px !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+}
+.reports-page .table-wrap table{
+  min-width:1450px !important;
+}
+.reports-page .table-wrap th,
+.reports-page .table-wrap td{
+  min-width:120px !important;
+}
+.reports-page .table-wrap th:nth-child(6),
+.reports-page .table-wrap td:nth-child(6),
+.reports-page .table-wrap th:nth-child(8),
+.reports-page .table-wrap td:nth-child(8),
+.reports-page .table-wrap th:nth-child(10),
+.reports-page .table-wrap td:nth-child(10){
+  min-width:160px !important;
+}
+.locked-time-display{
+  min-height:48px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#f7fff9;
+  padding:10px 12px;
+  display:grid;
+  gap:4px;
+}
+.locked-time-display b{font-size:15px;color:var(--purple)}
+.locked-time-display small{color:var(--muted);font-size:12px;line-height:1.25}
+.suggestion-panel,
+.vehicle-search-results,
+.inline-suggestions{
+  z-index:80 !important;
+  border-radius:18px !important;
+  overflow:hidden !important;
+  box-shadow:0 22px 50px rgba(43,0,72,.18) !important;
+  border:1px solid var(--line) !important;
+}
+.suggestion-panel button,
+.vehicle-search-results button,
+.inline-suggestions button{
+  min-height:48px !important;
+  align-items:center !important;
+}
+.report-toolbar{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:end !important;
+  gap:12px !important;
+}
+.report-toolbar .field{min-width:170px;max-width:260px;flex:1 1 190px}
+.report-toolbar .form-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.report-toolbar .btn{min-height:46px;white-space:nowrap}
+.chart-card,.report-chart-card{min-width:0 !important;overflow:hidden !important}
+.chart-box{min-height:300px !important;overflow:hidden !important}
+.bar-list-row{min-height:58px !important;text-align:left !important;white-space:normal !important}
+.bar-list-meta{display:flex;justify-content:space-between;gap:14px;align-items:center;min-width:0}
+.bar-list-meta b{overflow-wrap:anywhere}.bar-list-meta span{white-space:nowrap}
+@media(max-width:900px){
+  .table-wrap table{min-width:980px !important}
+  .reports-page .table-wrap table{min-width:1320px !important}
+  .report-toolbar .field{flex:1 1 100%;max-width:none}
+  .report-toolbar .form-actions{width:100%}
+  .report-toolbar .btn{flex:1 1 130px}
+}
+
+/* ================================
+   V66 FINAL TABLE RESPONSIVE FIX
+   Fix broken table field names on laptop/tablet by preventing header word splitting.
+   Wide operational tables now scroll horizontally instead of squeezing columns.
+   ================================ */
+.table-wrap,
+.table-responsive,
+.required-parts-clean-table.parts-fit-table{
+  max-width:100% !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+
+.table-wrap table,
+.table-responsive table{
+  width:max-content !important;
+  min-width:100% !important;
+  table-layout:auto !important;
+}
+
+.table-wrap th,
+.table-responsive th{
+  white-space:nowrap !important;
+  word-break:keep-all !important;
+  overflow-wrap:normal !important;
+  hyphens:none !important;
+  line-height:1.25 !important;
+  min-width:max-content !important;
+}
+
+.table-wrap td,
+.table-responsive td{
+  white-space:nowrap !important;
+  word-break:normal !important;
+  overflow-wrap:normal !important;
+  hyphens:none !important;
+}
+
+.table-wrap td[data-label="Part"],
+.table-wrap td[data-label="Issue"],
+.table-wrap td[data-label="Work Done"],
+.table-wrap td[data-label="Required / Issued Parts"],
+.table-wrap td[data-label="Parts Used"],
+.table-wrap td[data-label="Repair Details"],
+.table-wrap td[data-label="Description"]{
+  white-space:normal !important;
+  min-width:240px !important;
+  max-width:420px !important;
+  overflow-wrap:break-word !important;
+}
+
+.required-parts-clean-table.parts-fit-table{
+  border-radius:22px !important;
+  background:#fffdf8 !important;
+}
+
+.parts-fit-head,
+.parts-fit-row{
+  width:max-content !important;
+  min-width:1160px !important;
+  grid-template-columns:
+    108px
+    145px
+    260px
+    110px
+    72px
+    120px
+    130px
+    130px
+    120px
+    120px !important;
+}
+
+.parts-fit-head span,
+.parts-fit-row > div{
+  white-space:nowrap !important;
+  word-break:normal !important;
+  overflow-wrap:normal !important;
+  hyphens:none !important;
+  line-height:1.25 !important;
+  padding:14px 14px !important;
+  font-size:13px !important;
+}
+
+.parts-fit-head span{
+  font-size:13px !important;
+  letter-spacing:0 !important;
+}
+
+.parts-fit-part{
+  white-space:normal !important;
+  overflow-wrap:break-word !important;
+}
+
+.parts-fit-sku{
+  white-space:normal !important;
+  overflow-wrap:break-word !important;
+}
+
+.parts-fit-row > div[data-label="Validate"],
+.parts-fit-row > div[data-label="Available"],
+.parts-fit-row > div[data-label="Location"],
+.parts-fit-row > div[data-label="Action"]{
+  white-space:nowrap !important;
+}
+
+@media(max-width:980px){
+  .parts-fit-head,
+  .parts-fit-row{
+    min-width:0 !important;
+    width:100% !important;
+  }
+  .parts-fit-row > div,
+  .parts-fit-row > div *{
+    white-space:normal !important;
+  }
+}
+
+@media(min-width:981px){
+  .required-parts-clean-table.parts-fit-table::-webkit-scrollbar,
+  .table-wrap::-webkit-scrollbar,
+  .table-responsive::-webkit-scrollbar{
+    height:10px !important;
+  }
+  .required-parts-clean-table.parts-fit-table::-webkit-scrollbar-thumb,
+  .table-wrap::-webkit-scrollbar-thumb,
+  .table-responsive::-webkit-scrollbar-thumb{
+    background:#d8cbb8 !important;
+    border-radius:999px !important;
+  }
+}
+
+/* =========================================================
+   V67 DEFINITIVE PARTS LEDGER FIX
+   - Mechanic sees only SKU / Part / Qty / Status
+   - Store/Admin sees Validate / SKU / Part / Available / Qty / Cost / Selling / Total / Location / Action
+   - Headers never split. Table fits modal width without right-scroll on laptop/tablet.
+   ========================================================= */
+.parts-ledger{
+  width:100% !important;
+  max-width:100% !important;
+  overflow:visible !important;
+  border:1px solid var(--line) !important;
+  border-radius:22px !important;
+  background:#fffdf8 !important;
+  box-shadow:none !important;
+}
+.parts-ledger-head,
+.parts-ledger-row{
+  display:grid !important;
+  align-items:center !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+.parts-ledger-store .parts-ledger-head,
+.parts-ledger-store .parts-ledger-row{
+  grid-template-columns: 76px 118px minmax(170px,1.55fr) 84px 68px 86px 96px 96px 92px 92px !important;
+}
+.parts-ledger-mechanic .parts-ledger-head,
+.parts-ledger-mechanic .parts-ledger-row{
+  grid-template-columns: 150px minmax(240px,1fr) 80px 150px !important;
+}
+.parts-ledger-head{
+  background:#f1ece3 !important;
+  border-bottom:1px solid var(--line) !important;
+  color:var(--purple) !important;
+  font-weight:1000 !important;
+}
+.parts-ledger-head span,
+.parts-ledger-row > div{
+  min-width:0 !important;
+  padding:13px 12px !important;
+  line-height:1.22 !important;
+  font-size:13px !important;
+  text-align:left !important;
+  white-space:nowrap !important;
+  word-break:keep-all !important;
+  overflow-wrap:normal !important;
+  hyphens:none !important;
+}
+.parts-ledger-row{
+  min-height:66px !important;
+  border-bottom:1px solid var(--line) !important;
+  background:#fffdf8 !important;
+}
+.parts-ledger-row:last-child{border-bottom:0 !important;}
+.parts-ledger-part,
+.parts-ledger-sku{
+  white-space:normal !important;
+  word-break:normal !important;
+  overflow-wrap:break-word !important;
+}
+.parts-ledger-part b{font-weight:1000 !important;}
+.parts-ledger-qty .input{
+  width:58px !important;
+  min-width:58px !important;
+  max-width:58px !important;
+  padding:8px 8px !important;
+  text-align:center !important;
+  border-radius:12px !important;
+}
+.parts-ledger-action{
+  display:flex !important;
+  justify-content:center !important;
+  align-items:center !important;
+}
+.parts-ledger-action .part-remove-row{
+  min-width:78px !important;
+  height:36px !important;
+  padding:8px 12px !important;
+  border-radius:999px !important;
+  white-space:nowrap !important;
+}
+.validate-check{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:6px !important;
+}
+.validate-check input{width:18px !important;height:18px !important;accent-color:var(--green) !important;}
+.validate-check span{
+  display:inline-grid !important;
+  place-items:center !important;
+  width:20px !important;
+  height:20px !important;
+  border-radius:6px !important;
+  background:var(--green) !important;
+  color:#081b10 !important;
+  font-weight:1000 !important;
+}
+@media(max-width:1180px){
+  .modal-wide{max-width:min(1080px, calc(100vw - 28px)) !important;}
+  .parts-ledger-head span,
+  .parts-ledger-row > div{font-size:12px !important;padding:11px 9px !important;}
+  .parts-ledger-store .parts-ledger-head,
+  .parts-ledger-store .parts-ledger-row{
+    grid-template-columns: 68px 104px minmax(150px,1.45fr) 74px 60px 76px 84px 84px 78px 82px !important;
+  }
+}
+@media(max-width:820px){
+  .parts-ledger{overflow-x:auto !important;-webkit-overflow-scrolling:touch !important;}
+  .parts-ledger-store .parts-ledger-head,
+  .parts-ledger-store .parts-ledger-row{min-width:900px !important;}
+  .parts-ledger-mechanic .parts-ledger-head,
+  .parts-ledger-mechanic .parts-ledger-row{min-width:560px !important;}
+}
+
+/* =========================================================
+   V68 PRODUCTION POLISH - PROFESSIONAL COMPACT TABLES
+   Fixes: parts ledger clipping, broken headers, duplicate checks,
+   vehicle table empty right side, and report redundant scroll.
+   ========================================================= */
+
+/* Generic professional table reset */
+.table-wrap,
+.table-responsive{
+  max-width:100% !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  background:#fffdf8 !important;
+  border:1px solid var(--line) !important;
+  border-radius:20px !important;
+}
+.table-wrap table,
+.table-responsive table{
+  border-collapse:collapse !important;
+  width:100% !important;
+  table-layout:auto !important;
+}
+.table-wrap th,
+.table-responsive th{
+  white-space:nowrap !important;
+  word-break:keep-all !important;
+  overflow-wrap:normal !important;
+  hyphens:none !important;
+  font-size:13px !important;
+  line-height:1.15 !important;
+  padding:13px 12px !important;
+}
+.table-wrap td,
+.table-responsive td{
+  font-size:13px !important;
+  line-height:1.25 !important;
+  padding:13px 12px !important;
+  vertical-align:middle !important;
+}
+
+/* Vehicle page must not leave a blank right section */
+.vehicle-page .table-wrap table{
+  min-width:0 !important;
+  width:100% !important;
+  table-layout:auto !important;
+}
+.vehicle-page .table-wrap th,
+.vehicle-page .table-wrap td{
+  padding:12px 10px !important;
+}
+.vehicle-page .vehicle-img-box{
+  width:110px !important;
+  height:72px !important;
+}
+.vehicle-page .table-action-stack{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  gap:8px !important;
+  justify-content:flex-start !important;
+  align-items:center !important;
+}
+.vehicle-page .open-btn{
+  min-width:112px !important;
+  padding:10px 13px !important;
+  font-size:12px !important;
+}
+.vehicle-page .table-wrap th:nth-child(9),
+.vehicle-page .table-wrap td:nth-child(9){
+  width:250px !important;
+  min-width:250px !important;
+}
+
+/* Reports now has fewer operational columns, so fit it cleanly */
+.reports-page .table-wrap table{
+  min-width:0 !important;
+  width:100% !important;
+}
+.reports-page .table-wrap th,
+.reports-page .table-wrap td{
+  white-space:normal !important;
+  overflow-wrap:break-word !important;
+  word-break:normal !important;
+}
+.reports-page .table-wrap th{
+  white-space:nowrap !important;
+}
+.reports-page .table-wrap td[data-label*="Date/Time"],
+.reports-page .table-wrap td[data-label="Out Date/Time"],
+.reports-page .table-wrap td[data-label="In Date/Time"]{
+  white-space:nowrap !important;
+  min-width:150px !important;
+}
+
+/* Required / Issued Parts ledger - fit all storekeeper columns without right scroll */
+.parts-ledger{
+  width:100% !important;
+  max-width:100% !important;
+  overflow:hidden !important;
+  border:1px solid var(--line) !important;
+  border-radius:20px !important;
+  background:#fffdf8 !important;
+}
+.parts-ledger-head,
+.parts-ledger-row{
+  display:grid !important;
+  width:100% !important;
+  min-width:0 !important;
+  align-items:center !important;
+}
+.parts-ledger-store .parts-ledger-head,
+.parts-ledger-store .parts-ledger-row{
+  grid-template-columns:
+    minmax(56px,.55fr)
+    minmax(86px,.85fr)
+    minmax(170px,1.8fr)
+    minmax(66px,.6fr)
+    minmax(48px,.4fr)
+    minmax(68px,.58fr)
+    minmax(78px,.68fr)
+    minmax(78px,.68fr)
+    minmax(76px,.72fr)
+    minmax(78px,.72fr) !important;
+}
+.parts-ledger-mechanic .parts-ledger-head,
+.parts-ledger-mechanic .parts-ledger-row{
+  grid-template-columns:minmax(110px,.9fr) minmax(260px,2fr) minmax(70px,.5fr) minmax(130px,.9fr) !important;
+}
+.parts-ledger-head{
+  background:#f1ece3 !important;
+  color:var(--purple) !important;
+  font-weight:1000 !important;
+  border-bottom:1px solid var(--line) !important;
+}
+.parts-ledger-head span,
+.parts-ledger-row > div{
+  min-width:0 !important;
+  padding:11px 8px !important;
+  font-size:12px !important;
+  line-height:1.18 !important;
+  white-space:nowrap !important;
+  word-break:keep-all !important;
+  overflow-wrap:normal !important;
+  hyphens:none !important;
+  text-align:left !important;
+}
+.parts-ledger-row{
+  min-height:58px !important;
+  border-bottom:1px solid var(--line) !important;
+}
+.parts-ledger-row:last-child{border-bottom:0 !important;}
+.parts-ledger-sku,
+.parts-ledger-part,
+.parts-ledger-row > div[data-label="Location"]{
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+}
+.parts-ledger-part b{
+  font-weight:1000 !important;
+}
+.parts-ledger-qty .input{
+  width:54px !important;
+  min-width:54px !important;
+  max-width:54px !important;
+  padding:7px 6px !important;
+  text-align:center !important;
+  border-radius:12px !important;
+}
+.parts-ledger-action{
+  display:flex !important;
+  justify-content:center !important;
+  align-items:center !important;
+}
+.parts-ledger-action .part-remove-row,
+.parts-ledger .part-remove-row{
+  min-width:68px !important;
+  width:68px !important;
+  height:34px !important;
+  padding:7px 8px !important;
+  font-size:11px !important;
+  border-radius:999px !important;
+  white-space:nowrap !important;
+}
+.validate-check{
+  position:relative !important;
+  width:26px !important;
+  height:26px !important;
+  display:inline-grid !important;
+  place-items:center !important;
+}
+.validate-check input{
+  position:absolute !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+.validate-check span{
+  width:22px !important;
+  height:22px !important;
+  display:grid !important;
+  place-items:center !important;
+  border-radius:7px !important;
+  background:var(--green) !important;
+  color:#071d0c !important;
+  font-size:14px !important;
+  font-weight:1000 !important;
+}
+
+/* On tablet portrait, storekeeper table becomes readable cards instead of ugly horizontal scroll */
+@media(max-width:760px){
+  .parts-ledger{overflow:visible !important; border:0 !important; background:transparent !important;}
+  .parts-ledger-head{display:none !important;}
+  .parts-ledger-store .parts-ledger-row,
+  .parts-ledger-mechanic .parts-ledger-row{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:8px !important;
+    margin:10px 0 !important;
+    padding:12px !important;
+    border:1px solid var(--line) !important;
+    border-radius:18px !important;
+    background:#fffdf8 !important;
+    min-height:0 !important;
+  }
+  .parts-ledger-row > div{
+    display:grid !important;
+    grid-template-columns:88px minmax(0,1fr) !important;
+    gap:8px !important;
+    padding:6px !important;
+    white-space:normal !important;
+  }
+  .parts-ledger-row > div::before{
+    content:attr(data-label) !important;
+    font-weight:1000 !important;
+    color:var(--muted) !important;
+    white-space:nowrap !important;
+  }
+}
+
+
+/* =========================================================
+   V70 FINAL PROFESSIONAL TABLE / MODAL / REPORT UI FIX
+   ========================================================= */
+.modal-wide,
+.modal.modal-wide{
+  width:min(1320px, calc(100vw - 36px)) !important;
+  max-width:min(1320px, calc(100vw - 36px)) !important;
+}
+.assessment-detail-clean .card{overflow:visible !important;}
+.inventory-picker.advanced-part-picker{
+  display:grid !important;
+  grid-template-columns:minmax(360px,1fr) 150px auto !important;
+  gap:14px !important;
+  align-items:end !important;
+}
+.parts-ledger{
+  width:100% !important;
+  max-width:100% !important;
+  border:1px solid var(--line) !important;
+  border-radius:20px !important;
+  background:#fffdf8 !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+.parts-ledger-head,
+.parts-ledger-row{
+  display:grid !important;
+  align-items:center !important;
+  width:100% !important;
+  min-width:1120px !important;
+  gap:0 !important;
+}
+.parts-ledger-store .parts-ledger-head,
+.parts-ledger-store .parts-ledger-row{
+  grid-template-columns:76px 140px minmax(260px,1.5fr) 90px 76px 90px 100px 100px 110px 110px !important;
+}
+.parts-ledger-mechanic .parts-ledger-head,
+.parts-ledger-mechanic .parts-ledger-row{
+  min-width:640px !important;
+  grid-template-columns:150px minmax(280px,1fr) 80px 160px !important;
+}
+.parts-ledger-head{
+  background:#f1ece3 !important;
+  border-bottom:1px solid var(--line) !important;
+  position:sticky !important;
+  top:0 !important;
+  z-index:1 !important;
+}
+.parts-ledger-head span,
+.parts-ledger-row > div{
+  min-width:0 !important;
+  padding:14px 12px !important;
+  font-size:14px !important;
+  line-height:1.25 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  word-break:normal !important;
+  overflow-wrap:normal !important;
+  hyphens:none !important;
+}
+.parts-ledger-head span{font-weight:1000 !important;color:var(--purple) !important;}
+.parts-ledger-row{border-bottom:1px solid var(--line) !important;min-height:74px !important;}
+.parts-ledger-row:last-child{border-bottom:0 !important;}
+.parts-ledger-part,
+.parts-ledger-part b,
+.parts-ledger-sku{
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+}
+.parts-ledger-part b{display:block !important;font-weight:1000 !important;}
+.parts-ledger-qty .input{
+  width:72px !important;
+  min-width:72px !important;
+  height:42px !important;
+  padding:8px 10px !important;
+  text-align:center !important;
+  border-radius:14px !important;
+}
+.parts-ledger-action{justify-content:center !important;display:flex !important;}
+.parts-ledger .part-remove-row{min-width:88px !important;height:42px !important;border-radius:999px !important;background:#ef476f !important;color:#fff !important;font-weight:1000 !important;}
+.validate-check{display:inline-flex !important;align-items:center !important;justify-content:center !important;width:34px !important;height:34px !important;position:relative !important;}
+.validate-check input{position:absolute !important;opacity:0 !important;pointer-events:none !important;}
+.validate-check span{width:34px !important;height:34px !important;border-radius:10px !important;background:#6be879 !important;color:#082b12 !important;display:grid !important;place-items:center !important;font-weight:1000 !important;}
+.validate-check input:not(:checked) + span{background:#f3eee6 !important;color:#7b6984 !important;}
+.table-wrap table{min-width:980px !important;}
+.table-wrap th{white-space:nowrap !important;word-break:keep-all !important;}
+.table-wrap td{vertical-align:middle !important;}
+.inventory-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:14px;margin:0 0 18px;}
+.danger-card{border-color:#ffd6df !important;background:#fff8fa !important;}
+.metric-card.clickable-card{cursor:pointer;text-align:left;}
+@media(max-width:1100px){
+  .modal-wide,.modal.modal-wide{width:calc(100vw - 24px) !important;max-width:calc(100vw - 24px) !important;}
+  .inventory-picker.advanced-part-picker{grid-template-columns:1fr 120px !important;}
+  .inventory-picker.advanced-part-picker .btn{grid-column:1/-1 !important;}
+  .inventory-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:720px){
+  .parts-ledger{border:0 !important;background:transparent !important;overflow:visible !important;}
+  .parts-ledger-head{display:none !important;}
+  .parts-ledger-row,
+  .parts-ledger-store .parts-ledger-row,
+  .parts-ledger-mechanic .parts-ledger-row{
+    min-width:0 !important;
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:10px !important;
+    padding:14px !important;
+    margin-bottom:12px !important;
+    border:1px solid var(--line) !important;
+    border-radius:18px !important;
+    background:#fff !important;
+  }
+  .parts-ledger-row > div{display:grid !important;gap:4px !important;padding:8px !important;white-space:normal !important;overflow:visible !important;}
+  .parts-ledger-row > div::before{content:attr(data-label);font-size:11px;font-weight:1000;color:var(--muted);text-transform:uppercase;}
+  .inventory-kpi-grid{grid-template-columns:1fr;}
+}
+
+
+/* =========================================================
+   V76 Vehicle filters, vehicle out form and project copyright
+   ========================================================= */
+.vehicle-filter-panel{
+  display:grid;
+  gap:14px;
+  margin-bottom:18px;
+}
+.vehicle-type-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+.vehicle-type-tabs button{
+  border:2px solid var(--line);
+  background:#fffdf8;
+  color:var(--purple);
+  border-radius:999px;
+  padding:10px 15px;
+  font-weight:1000;
+  cursor:pointer;
+}
+.vehicle-type-tabs button.active,
+.vehicle-type-tabs button:hover{
+  background:var(--purple);
+  color:white;
+  border-color:var(--purple);
+}
+.table-action-stack{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+.vehicle-page .table-wrap table{
+  min-width:1280px;
+}
+.vehicle-page .table-wrap th,
+.vehicle-page .table-wrap td{
+  white-space:normal;
+  word-break:normal;
+}
+.vehicle-page .table-wrap td:first-child,
+.vehicle-page .table-wrap td:nth-child(2),
+.vehicle-page .table-wrap td:last-child{
+  white-space:nowrap;
+}
+.locked-time-display{
+  min-height:50px;
+  display:flex;
+  align-items:center;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#f8f4ec;
+  padding:12px 15px;
+  color:var(--purple);
+}
+.app-copyright{
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.5px;
+  padding:18px 12px 26px;
+}
+@media(max-width:980px){
+  .vehicle-type-tabs{
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    padding-bottom:8px;
+  }
+  .vehicle-type-tabs button{
+    white-space:nowrap;
+  }
+}
+
+/* =========================================================
+   V77 Vehicle table production polish
+   Fix action buttons touching edge/sticking to table border.
+   Keep table readable with vehicle type after plate.
+   ========================================================= */
+.vehicle-page {
+  max-width: 1440px !important;
+}
+.vehicle-page .table-wrap {
+  padding-right: 10px !important;
+  overflow-x: auto !important;
+}
+.vehicle-page .table-wrap table {
+  min-width: 1240px !important;
+  table-layout: auto !important;
+}
+.vehicle-page .table-wrap th,
+.vehicle-page .table-wrap td {
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+.vehicle-page .table-wrap th:last-child,
+.vehicle-page .table-wrap td:last-child {
+  min-width: 230px !important;
+  width: 230px !important;
+  padding-right: 28px !important;
+  text-align: right !important;
+}
+.vehicle-page .table-wrap td:last-child .button-row,
+.vehicle-page .table-wrap td:last-child {
+  gap: 10px !important;
+}
+.vehicle-page .open-btn,
+.vehicle-page .outline-btn,
+.vehicle-page .btn {
+  white-space: nowrap !important;
+}
+
+/* =========================================================
+   V79 PRODUCTION POLISH - VEHICLE TABLE + LIVE CHARTS
+   ========================================================= */
+.vehicle-page {
+  max-width: none !important;
+  padding-right: 40px !important;
+}
+.vehicle-page .table-wrap {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  padding-bottom: 8px !important;
+}
+.vehicle-page .table-wrap table {
+  min-width: 1320px !important;
+  table-layout: fixed !important;
+}
+.vehicle-page .table-wrap th,
+.vehicle-page .table-wrap td {
+  padding: 12px 10px !important;
+  font-size: 12.5px !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+.vehicle-page .table-wrap th:nth-child(1),
+.vehicle-page .table-wrap td:nth-child(1) { width: 145px !important; }
+.vehicle-page .table-wrap th:nth-child(2),
+.vehicle-page .table-wrap td:nth-child(2) { width: 120px !important; }
+.vehicle-page .table-wrap th:nth-child(3),
+.vehicle-page .table-wrap td:nth-child(3) { width: 130px !important; }
+.vehicle-page .table-wrap th:nth-child(4),
+.vehicle-page .table-wrap td:nth-child(4) { width: 135px !important; }
+.vehicle-page .table-wrap th:nth-child(5),
+.vehicle-page .table-wrap td:nth-child(5) { width: 130px !important; }
+.vehicle-page .table-wrap th:nth-child(6),
+.vehicle-page .table-wrap td:nth-child(6) { width: 155px !important; }
+.vehicle-page .table-wrap th:nth-child(7),
+.vehicle-page .table-wrap td:nth-child(7) { width: 105px !important; }
+.vehicle-page .table-wrap th:nth-child(8),
+.vehicle-page .table-wrap td:nth-child(8),
+.vehicle-page .table-wrap th:nth-child(9),
+.vehicle-page .table-wrap td:nth-child(9) { width: 140px !important; }
+.vehicle-page .table-wrap th:nth-child(10),
+.vehicle-page .table-wrap td:nth-child(10) {
+  width: 205px !important;
+  min-width: 205px !important;
+  white-space: nowrap !important;
+  position: sticky !important;
+  right: 0 !important;
+  background: #fffdf8 !important;
+  box-shadow: -12px 0 18px rgba(43,0,72,.08) !important;
+  z-index: 2 !important;
+}
+.vehicle-page .table-wrap th:nth-child(10) {
+  background: #f1ece3 !important;
+  z-index: 3 !important;
+}
+.vehicle-page .table-action-stack {
+  display:flex !important;
+  gap:8px !important;
+  align-items:center !important;
+  flex-wrap:nowrap !important;
+}
+.vehicle-page .table-action-stack .open-btn {
+  padding: 9px 12px !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+.vehicle-page .vehicle-img-box,
+.vehicle-page .table-vehicle-img {
+  width: 92px !important;
+  height: 56px !important;
+  object-fit: cover !important;
+}
+.vehicle-analytics-grid,
+.fuel-analytics-grid {
+  display:grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap:18px !important;
+  align-items:stretch !important;
+}
+.fuel-analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.fuel-analytics-grid .metric-card { min-height: 150px !important; }
+.chart-card .chart-box {
+  width:100% !important;
+  height:260px !important;
+  min-height:260px !important;
+}
+.empty-chart {
+  height:100% !important;
+  display:grid !important;
+  place-items:center !important;
+  color:var(--muted) !important;
+  border:1px dashed var(--line) !important;
+  border-radius:18px !important;
+  background:#fffdf8 !important;
+  font-weight:900 !important;
+}
+.analytics-tooltip {
+  background:white !important;
+  border:1px solid var(--line) !important;
+  border-radius:14px !important;
+  padding:10px 12px !important;
+  box-shadow:0 18px 40px rgba(43,0,72,.18) !important;
+  display:grid !important;
+  gap:4px !important;
+  color:var(--text) !important;
+  font-size:12px !important;
+}
+@media(max-width:1200px){
+  .vehicle-analytics-grid,
+  .fuel-analytics-grid{ grid-template-columns:1fr !important; }
+}
+
+/* =========================================================
+   V80 FINAL PRODUCTION TABLE + CHART ACTION FIX
+   - Vehicle table uses a controlled grid width and sticky action column
+   - Action buttons no longer cut outside the card
+   - Chart cards have per-chart download dropdowns
+   ========================================================= */
+.vehicle-page {
+  padding-right: 38px !important;
+}
+
+.vehicle-page .table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  padding-bottom: 12px !important;
+  border-radius: 20px !important;
+}
+
+.vehicle-page .table-wrap table {
+  width: max-content !important;
+  min-width: 1380px !important;
+  table-layout: fixed !important;
+}
+
+.vehicle-page .table-wrap th,
+.vehicle-page .table-wrap td {
+  padding: 12px 10px !important;
+  font-size: 12.5px !important;
+  line-height: 1.25 !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+.vehicle-page .table-wrap th {
+  white-space: nowrap !important;
+}
+
+.vehicle-page .table-wrap th:nth-child(1),
+.vehicle-page .table-wrap td:nth-child(1) { width: 130px !important; min-width: 130px !important; }
+.vehicle-page .table-wrap th:nth-child(2),
+.vehicle-page .table-wrap td:nth-child(2) { width: 110px !important; min-width: 110px !important; }
+.vehicle-page .table-wrap th:nth-child(3),
+.vehicle-page .table-wrap td:nth-child(3) { width: 120px !important; min-width: 120px !important; }
+.vehicle-page .table-wrap th:nth-child(4),
+.vehicle-page .table-wrap td:nth-child(4) { width: 160px !important; min-width: 160px !important; }
+.vehicle-page .table-wrap th:nth-child(5),
+.vehicle-page .table-wrap td:nth-child(5) { width: 130px !important; min-width: 130px !important; }
+.vehicle-page .table-wrap th:nth-child(6),
+.vehicle-page .table-wrap td:nth-child(6) { width: 165px !important; min-width: 165px !important; }
+.vehicle-page .table-wrap th:nth-child(7),
+.vehicle-page .table-wrap td:nth-child(7) { width: 100px !important; min-width: 100px !important; }
+.vehicle-page .table-wrap th:nth-child(8),
+.vehicle-page .table-wrap td:nth-child(8) { width: 145px !important; min-width: 145px !important; white-space: nowrap !important; }
+.vehicle-page .table-wrap th:nth-child(9),
+.vehicle-page .table-wrap td:nth-child(9) { width: 145px !important; min-width: 145px !important; white-space: nowrap !important; }
+.vehicle-page .table-wrap th:nth-child(10),
+.vehicle-page .table-wrap td:nth-child(10) {
+  width: 210px !important;
+  min-width: 210px !important;
+  max-width: 210px !important;
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 8 !important;
+  background: #fffdf8 !important;
+  box-shadow: -14px 0 22px rgba(31, 0, 55, .08) !important;
+  white-space: nowrap !important;
+}
+.vehicle-page .table-wrap th:nth-child(10) {
+  z-index: 12 !important;
+  background: #eee8dc !important;
+}
+
+.vehicle-page .table-action-stack {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+}
+.vehicle-page .table-action-stack .open-btn {
+  padding: 8px 11px !important;
+  font-size: 11.5px !important;
+  line-height: 1 !important;
+  min-width: 86px !important;
+  max-width: 92px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.vehicle-page .table-action-stack .secondary-open-btn {
+  min-width: 104px !important;
+  max-width: 112px !important;
+}
+.vehicle-page .table-vehicle-img {
+  width: 86px !important;
+  height: 58px !important;
+  object-fit: cover !important;
+  border-radius: 12px !important;
+}
+
+.pro-chart-card .card-head,
+.fuel-page .card-head,
+.vehicle-analytics-grid .card-head {
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+.chart-export-menu {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: auto !important;
+  z-index: 20 !important;
+}
+.mini-export-btn {
+  border: 1px solid #ded4c4 !important;
+  background: #fffdf8 !important;
+  color: var(--purple) !important;
+  border-radius: 999px !important;
+  font-weight: 1000 !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+}
+.chart-export-popover {
+  position: absolute !important;
+  right: 0 !important;
+  top: calc(100% + 8px) !important;
+  min-width: 150px !important;
+  background: #fff !important;
+  border: 1px solid #e7dccb !important;
+  border-radius: 14px !important;
+  box-shadow: 0 18px 42px rgba(31, 0, 55, .18) !important;
+  padding: 8px !important;
+  display: grid !important;
+  gap: 6px !important;
+}
+.chart-export-popover button {
+  border: 0 !important;
+  background: #fbf8f2 !important;
+  color: var(--purple) !important;
+  text-align: left !important;
+  font-weight: 900 !important;
+  border-radius: 10px !important;
+  padding: 9px 10px !important;
+  cursor: pointer !important;
+}
+.chart-export-popover button:hover { background: #efe7ff !important; }
+
+.fuel-analytics-grid,
+.vehicle-analytics-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(360px, 1fr)) !important;
+  gap: 18px !important;
+  align-items: stretch !important;
+}
+.fuel-analytics-grid .metric-card { min-height: 130px !important; }
+.fuel-analytics-grid .chart-card,
+.vehicle-analytics-grid .chart-card { min-height: 360px !important; }
+.fuel-page .chart-box,
+.vehicle-analytics-grid .chart-box { height: 275px !important; }
+
+@media (max-width: 1180px) {
+  .vehicle-page { padding-right: 18px !important; }
+  .fuel-analytics-grid,
+  .vehicle-analytics-grid { grid-template-columns: 1fr !important; }
+}
+
+/* =========================================================
+   V81 FINAL PRODUCTION POLISH
+   Vehicles table fit + exact vehicle/fuel analytics charts
+   ========================================================= */
+.vehicle-page .table-wrap{
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:auto !important;
+  overflow-y:visible !important;
+  padding-right:0 !important;
+  border-radius:18px !important;
+}
+.vehicle-page .table-wrap table{
+  min-width:1120px !important;
+  width:100% !important;
+  table-layout:fixed !important;
+}
+.vehicle-page .table-wrap th,
+.vehicle-page .table-wrap td{
+  padding:10px 8px !important;
+  font-size:12px !important;
+  line-height:1.22 !important;
+}
+.vehicle-page .table-wrap th:nth-child(1),
+.vehicle-page .table-wrap td:nth-child(1){ width:120px !important; }
+.vehicle-page .table-wrap th:nth-child(2),
+.vehicle-page .table-wrap td:nth-child(2){ width:95px !important; }
+.vehicle-page .table-wrap th:nth-child(3),
+.vehicle-page .table-wrap td:nth-child(3){ width:105px !important; }
+.vehicle-page .table-wrap th:nth-child(4),
+.vehicle-page .table-wrap td:nth-child(4){ width:125px !important; }
+.vehicle-page .table-wrap th:nth-child(5),
+.vehicle-page .table-wrap td:nth-child(5){ width:110px !important; }
+.vehicle-page .table-wrap th:nth-child(6),
+.vehicle-page .table-wrap td:nth-child(6){ width:140px !important; }
+.vehicle-page .table-wrap th:nth-child(7),
+.vehicle-page .table-wrap td:nth-child(7){ width:85px !important; }
+.vehicle-page .table-wrap th:nth-child(8),
+.vehicle-page .table-wrap td:nth-child(8),
+.vehicle-page .table-wrap th:nth-child(9),
+.vehicle-page .table-wrap td:nth-child(9){ width:125px !important; }
+.vehicle-page .table-wrap th:nth-child(10),
+.vehicle-page .table-wrap td:nth-child(10){
+  width:145px !important;
+  min-width:145px !important;
+  right:0 !important;
+  position:sticky !important;
+  background:#fffdf8 !important;
+  box-shadow:-8px 0 12px rgba(43,0,72,.08) !important;
+  text-align:center !important;
+  padding-right:10px !important;
+}
+.vehicle-page .table-wrap th:nth-child(10){ background:#f1ece3 !important; }
+.vehicle-page .table-action-stack{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:6px !important;
+  align-items:stretch !important;
+  justify-content:center !important;
+}
+.vehicle-page .table-action-stack .open-btn{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:130px !important;
+  padding:7px 8px !important;
+  font-size:11px !important;
+  line-height:1.1 !important;
+  margin:0 auto !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.vehicle-page .vehicle-img-box,
+.vehicle-page .table-vehicle-img{
+  width:76px !important;
+  height:48px !important;
+  border-radius:12px !important;
+}
+.vehicle-page .badge{ font-size:10px !important; padding:6px 9px !important; }
+.vehicle-analytics-grid,
+.fuel-analytics-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:16px !important;
+}
+.vehicle-kpi-row{
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+}
+.chart-card.pro-chart-card{ overflow:visible !important; }
+.chart-card .chart-box{ height:285px !important; min-height:285px !important; }
+.card-head{ display:flex !important; align-items:flex-start !important; justify-content:space-between !important; gap:12px !important; }
+.card-head h2{ margin:0 0 4px 0 !important; }
+.card-head p{ margin:0 !important; color:var(--muted) !important; font-weight:700 !important; }
+.chart-export-menu{ position:relative !important; flex:0 0 auto !important; }
+.mini-export-btn{
+  border:1px solid var(--line) !important;
+  background:#fffdf8 !important;
+  border-radius:12px !important;
+  padding:8px 10px !important;
+  color:var(--purple) !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+}
+.chart-export-popover{
+  position:absolute !important;
+  right:0 !important;
+  top:38px !important;
+  z-index:30 !important;
+  min-width:145px !important;
+  background:white !important;
+  border:1px solid var(--line) !important;
+  border-radius:14px !important;
+  box-shadow:0 12px 30px rgba(43,0,72,.15) !important;
+  padding:8px !important;
+}
+.chart-export-popover button{
+  display:block !important;
+  width:100% !important;
+  border:0 !important;
+  background:white !important;
+  text-align:left !important;
+  padding:9px 10px !important;
+  border-radius:10px !important;
+  font-weight:900 !important;
+  color:var(--purple) !important;
+  cursor:pointer !important;
+}
+.chart-export-popover button:hover{ background:#f8f4ec !important; }
+@media(max-width:1200px){
+  .vehicle-analytics-grid,
+  .fuel-analytics-grid,
+  .vehicle-kpi-row{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+@media(max-width:760px){
+  .vehicle-analytics-grid,
+  .fuel-analytics-grid,
+  .vehicle-kpi-row{ grid-template-columns:1fr !important; }
+}
+
+/* =========================================================
+   V82 SUPER ADMIN VISIBILITY + VEHICLE TABLE FINAL FIT
+   Keep actions visible, avoid clipped buttons on laptop/tablet.
+   ========================================================= */
+.vehicle-page .table-wrap{
+  overflow-x:auto !important;
+  overflow-y:visible !important;
+  padding-right:0 !important;
+}
+.vehicle-page .table-wrap table{
+  min-width:1360px !important;
+  table-layout:fixed !important;
+}
+.vehicle-page .table-wrap th:nth-child(1),
+.vehicle-page .table-wrap td:nth-child(1){ width:125px !important; min-width:125px !important; }
+.vehicle-page .table-wrap th:nth-child(2),
+.vehicle-page .table-wrap td:nth-child(2){ width:100px !important; min-width:100px !important; }
+.vehicle-page .table-wrap th:nth-child(3),
+.vehicle-page .table-wrap td:nth-child(3){ width:115px !important; min-width:115px !important; }
+.vehicle-page .table-wrap th:nth-child(4),
+.vehicle-page .table-wrap td:nth-child(4){ width:155px !important; min-width:155px !important; }
+.vehicle-page .table-wrap th:nth-child(5),
+.vehicle-page .table-wrap td:nth-child(5){ width:125px !important; min-width:125px !important; }
+.vehicle-page .table-wrap th:nth-child(6),
+.vehicle-page .table-wrap td:nth-child(6){ width:165px !important; min-width:165px !important; }
+.vehicle-page .table-wrap th:nth-child(7),
+.vehicle-page .table-wrap td:nth-child(7){ width:100px !important; min-width:100px !important; }
+.vehicle-page .table-wrap th:nth-child(8),
+.vehicle-page .table-wrap td:nth-child(8),
+.vehicle-page .table-wrap th:nth-child(9),
+.vehicle-page .table-wrap td:nth-child(9){ width:145px !important; min-width:145px !important; }
+.vehicle-page .table-wrap th:nth-child(10),
+.vehicle-page .table-wrap td:nth-child(10){
+  width:230px !important;
+  min-width:230px !important;
+  max-width:230px !important;
+  position:sticky !important;
+  right:0 !important;
+  z-index:5 !important;
+  background:#fffdf8 !important;
+  padding-left:14px !important;
+  padding-right:14px !important;
+  box-shadow:-10px 0 18px rgba(43,0,72,.12) !important;
+}
+.vehicle-page .table-wrap th:nth-child(10){ z-index:6 !important; background:#f1ece3 !important; }
+.vehicle-page .table-action-stack{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:8px !important;
+  width:100% !important;
+}
+.vehicle-page .table-action-stack .open-btn{
+  width:100% !important;
+  max-width:none !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  padding:8px 10px !important;
+  font-size:12px !important;
+}
+.dashboard-chart-grid .chart-card{ min-height:390px !important; }
+.dashboard-chart-grid .chart-box{ min-height:285px !important; }
+
+/* =========================================================
+   V87 ACCURACY + UI POLISH
+   - Exact OUT/IN chart becomes main full-width chart
+   - Vehicle action column has enough width
+   - Store keeper analytics and stock picker
+   ========================================================= */
+.vehicle-analytics-grid .chart-card:nth-child(4){
+  grid-column:1 / -1 !important;
+  min-height:470px !important;
+}
+.vehicle-analytics-grid .chart-card:nth-child(4) .chart-box{
+  height:385px !important;
+  min-height:385px !important;
+}
+.vehicle-page .table-wrap table{
+  min-width:1280px !important;
+}
+.vehicle-page .table-wrap th:nth-child(10),
+.vehicle-page .table-wrap td:nth-child(10){
+  width:230px !important;
+  min-width:230px !important;
+  max-width:230px !important;
+}
+.vehicle-page .table-action-stack .open-btn{
+  max-width:190px !important;
+  white-space:normal !important;
+}
+.store-analytics-grid{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:16px !important;
+  margin:18px 0 !important;
+}
+.store-analytics-grid .chart-card{min-height:360px !important;}
+.store-analytics-grid .chart-box{height:280px !important; min-height:280px !important;}
+.stock-picker-results{
+  max-height:320px !important;
+  overflow:auto !important;
+  border:1px solid var(--line) !important;
+  border-radius:16px !important;
+  background:#fffdf8 !important;
+  display:grid !important;
+  gap:0 !important;
+  margin:10px 0 16px !important;
+}
+.stock-picker-results button{
+  border:0 !important;
+  border-bottom:1px solid var(--line) !important;
+  background:transparent !important;
+  padding:12px 14px !important;
+  text-align:left !important;
+  display:grid !important;
+  gap:3px !important;
+  color:var(--purple) !important;
+  cursor:pointer !important;
+}
+.stock-picker-results button:hover{background:#f7f0ff !important;}
+.stock-selected-card{
+  display:grid !important;
+  gap:4px !important;
+  border:1px solid #aaf3c5 !important;
+  background:#f1fff5 !important;
+  border-radius:16px !important;
+  padding:12px 14px !important;
+  margin:10px 0 16px !important;
+  color:var(--purple) !important;
+}
+@media(max-width:1200px){
+  .store-analytics-grid{grid-template-columns:1fr !important;}
+}
+
+/* =========================================================
+   V88 FINAL CHART READABILITY + EXACT VEHICLE TRACKING
+   - Critical low stock chart uses short SKU labels + tooltip for full details
+   - Exact OUT/IN timeline is the first large full-width chart
+   - Two main vehicle charts below are centered in a two-column layout
+   ========================================================= */
+.store-analytics-grid .low-stock-chart-card{
+  min-height:430px !important;
+}
+.store-analytics-grid .low-stock-chart-card .chart-box{
+  height:350px !important;
+  min-height:350px !important;
+  overflow:hidden !important;
+}
+.store-analytics-grid .low-stock-chart-card .recharts-yAxis .recharts-cartesian-axis-tick text{
+  font-size:11px !important;
+  font-weight:800 !important;
+}
+.store-analytics-grid .low-stock-chart-card .recharts-legend-wrapper{
+  font-size:12px !important;
+}
+
+.vehicle-analytics-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  align-items:stretch !important;
+}
+.vehicle-analytics-grid .chart-card{
+  min-height:375px !important;
+}
+.vehicle-analytics-grid .chart-card .chart-box{
+  height:300px !important;
+  min-height:300px !important;
+}
+.vehicle-analytics-grid .chart-card:nth-child(1){
+  grid-column:1 / -1 !important;
+  min-height:520px !important;
+}
+.vehicle-analytics-grid .chart-card:nth-child(1) .chart-box{
+  height:430px !important;
+  min-height:430px !important;
+}
+.vehicle-analytics-grid .chart-card:nth-child(4){
+  grid-column:auto !important;
+  min-height:375px !important;
+}
+.vehicle-analytics-grid .chart-card:nth-child(4) .chart-box{
+  height:300px !important;
+  min-height:300px !important;
+}
+@media(max-width:900px){
+  .vehicle-analytics-grid{grid-template-columns:1fr !important;}
+  .vehicle-analytics-grid .chart-card:nth-child(1){grid-column:auto !important;}
+}
+
+/* =========================================================
+   V89 FINAL MODERN CHARTS + VEHICLE TABLE VISIBILITY
+   - Store/Admin/Mechanic dashboards use modern DB-backed charts
+   - Reports store/admin charts match Store Keeper parts page quality
+   - Vehicle table shows Latest Check-out fully and keeps actions usable
+   ========================================================= */
+.vehicle-page .table-wrap{
+  overflow-x:auto !important;
+  overflow-y:visible !important;
+  padding-right:8px !important;
+}
+.vehicle-page .table-wrap table{
+  min-width:1520px !important;
+  width:max-content !important;
+  table-layout:fixed !important;
+}
+.vehicle-page .table-wrap th:nth-child(8),
+.vehicle-page .table-wrap td:nth-child(8),
+.vehicle-page .table-wrap th:nth-child(9),
+.vehicle-page .table-wrap td:nth-child(9){
+  width:185px !important;
+  min-width:185px !important;
+  max-width:185px !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+}
+.vehicle-page .table-wrap th:nth-child(10),
+.vehicle-page .table-wrap td:nth-child(10){
+  width:260px !important;
+  min-width:260px !important;
+  max-width:260px !important;
+  position:sticky !important;
+  right:0 !important;
+  background:#fffdf8 !important;
+  z-index:8 !important;
+  box-shadow:-14px 0 24px rgba(43,0,72,.12) !important;
+}
+.vehicle-page .table-wrap th:nth-child(10){
+  background:#efe8dd !important;
+  z-index:10 !important;
+}
+.vehicle-page .table-action-stack{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:8px !important;
+  width:100% !important;
+}
+.vehicle-page .table-action-stack .open-btn{
+  width:100% !important;
+  max-width:none !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+}
+.dashboard-modern-chart-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:18px !important;
+}
+.dashboard-modern-chart-grid .chart-card,
+.analytics-grid .report-chart-card{
+  min-height:390px !important;
+}
+.dashboard-modern-chart-grid .chart-box,
+.analytics-grid .report-chart-card .chart-box{
+  min-height:285px !important;
+  height:285px !important;
+}
+.mechanic-analytics-grid{
+  margin-top:20px !important;
+}
+.admin-store-visibility-grid{
+  margin:22px 0 !important;
+}
+.admin-store-visibility-grid + .dashboard-modern-chart-grid{
+  margin-top:0 !important;
+}
+@media(max-width:1280px){
+  .dashboard-modern-chart-grid{ grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+@media(max-width:820px){
+  .dashboard-modern-chart-grid{ grid-template-columns:1fr !important; }
+  .vehicle-page .table-wrap table{ min-width:1450px !important; }
+}
+
+
+/* ===================== V90 PRODUCTION UI + TABLE RESPONSIVE FIXES ===================== */
+.vehicle-page .table-wrap,
+.vehicle-page .table-responsive{overflow-x:auto !important; max-width:100% !important; padding-right:0 !important;}
+.vehicle-page table{min-width:1480px !important; table-layout:fixed !important; width:max-content !important;}
+.vehicle-page th:nth-child(1), .vehicle-page td:nth-child(1){width:140px !important; min-width:140px !important;}
+.vehicle-page th:nth-child(2), .vehicle-page td:nth-child(2){width:120px !important; min-width:120px !important;}
+.vehicle-page th:nth-child(3), .vehicle-page td:nth-child(3){width:130px !important; min-width:130px !important;}
+.vehicle-page th:nth-child(4), .vehicle-page td:nth-child(4){width:180px !important; min-width:180px !important;}
+.vehicle-page th:nth-child(7), .vehicle-page td:nth-child(7){width:110px !important; min-width:110px !important;}
+.vehicle-page th:nth-child(8), .vehicle-page td:nth-child(8),
+.vehicle-page th:nth-child(9), .vehicle-page td:nth-child(9){width:175px !important; min-width:175px !important; white-space:nowrap !important; overflow:visible !important;}
+.vehicle-page th:nth-child(10), .vehicle-page td:nth-child(10){width:190px !important; min-width:190px !important; position:sticky !important; right:0 !important; background:#fffdf8 !important; z-index:3 !important; box-shadow:-10px 0 18px rgba(49,0,75,.06) !important;}
+.vehicle-page .table-action-stack{display:flex !important; flex-direction:column !important; gap:8px !important; align-items:stretch !important; min-width:165px !important;}
+.vehicle-page .open-btn{white-space:nowrap !important; width:100% !important; padding:10px 12px !important; font-size:13px !important;}
+.store-analytics-grid{display:grid !important; grid-template-columns:repeat(2,minmax(360px,1fr)) !important; align-items:stretch !important; gap:22px !important;}
+.dashboard-modern-chart-grid{align-items:stretch !important; grid-auto-flow:row !important;}
+.dashboard-modern-chart-grid .chart-card, .store-analytics-grid .chart-card{min-height:380px !important;}
+.external-parts-page .stock-picker-results{max-height:320px !important; overflow:auto !important;}
+.external-parts-page .inventory-kpi-grid .card{padding:18px 20px !important;}
+@media(max-width:1100px){.store-analytics-grid{grid-template-columns:1fr !important}.vehicle-page table{min-width:1350px !important}}
+
+/* ===================== V91 VEHICLE TABLE + STORE ISSUE + DASHBOARD POLISH ===================== */
+.vehicle-page .vehicle-type-tabs button:empty{display:none !important;}
+.vehicle-page .table-wrap,
+.vehicle-page .table-responsive{
+  overflow-x:auto !important;
+  overflow-y:visible !important;
+  padding-right:0 !important;
+  border-radius:22px !important;
+}
+.vehicle-page .table-wrap table,
+.vehicle-page table{
+  min-width:1680px !important;
+  width:max-content !important;
+  table-layout:fixed !important;
+}
+.vehicle-page th:nth-child(8), .vehicle-page td:nth-child(8),
+.vehicle-page th:nth-child(9), .vehicle-page td:nth-child(9){
+  width:220px !important;
+  min-width:220px !important;
+  max-width:220px !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+}
+.vehicle-page th:nth-child(10), .vehicle-page td:nth-child(10){
+  width:280px !important;
+  min-width:280px !important;
+  max-width:280px !important;
+  position:sticky !important;
+  right:0 !important;
+  background:#fffdf8 !important;
+  z-index:20 !important;
+  box-shadow:-18px 0 28px rgba(43,0,72,.14) !important;
+}
+.vehicle-page th:nth-child(10){background:#efe8dd !important; z-index:22 !important;}
+.vehicle-page .table-action-stack{display:grid !important; grid-template-columns:1fr !important; gap:9px !important; min-width:245px !important; width:100% !important;}
+.vehicle-page .table-action-stack .open-btn{width:100% !important; min-width:0 !important; padding:11px 12px !important; white-space:nowrap !important; overflow:visible !important;}
+.external-issue-form-card{margin-bottom:22px !important;}
+.external-parts-page .parts-basket{margin:18px 0 !important;}
+.external-parts-page .parts-basket .input{max-width:90px !important;}
+.external-parts-page .stock-picker-results{z-index:80 !important;}
+.mechanic-analytics-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+@media(max-width:1280px){.mechanic-analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}.vehicle-page table{min-width:1600px !important;}}
+@media(max-width:860px){.mechanic-analytics-grid{grid-template-columns:1fr !important;}.vehicle-page table{min-width:1500px !important;}}
+
+
+/* =========================================================
+   V92 FINAL UI HOTFIX - Garage table + vehicle table + names
+   ========================================================= */
+.garage-work-table-shell{
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+  border-radius:18px !important;
+}
+.garage-work-table-shell .table-wrap{
+  overflow:visible !important;
+  width:max-content !important;
+  min-width:1380px !important;
+  max-width:none !important;
+}
+.garage-work-table-shell table{
+  width:1380px !important;
+  min-width:1380px !important;
+  table-layout:fixed !important;
+}
+.garage-work-table-shell th,
+.garage-work-table-shell td{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  padding:14px 12px !important;
+  font-size:13px !important;
+}
+.garage-work-table-shell th:nth-child(1), .garage-work-table-shell td:nth-child(1){width:170px !important;}
+.garage-work-table-shell th:nth-child(2), .garage-work-table-shell td:nth-child(2){width:150px !important;}
+.garage-work-table-shell th:nth-child(3), .garage-work-table-shell td:nth-child(3){width:210px !important;}
+.garage-work-table-shell th:nth-child(4), .garage-work-table-shell td:nth-child(4){width:120px !important;}
+.garage-work-table-shell th:nth-child(5), .garage-work-table-shell td:nth-child(5){width:150px !important;}
+.garage-work-table-shell th:nth-child(6), .garage-work-table-shell td:nth-child(6){width:160px !important;}
+.garage-work-table-shell th:nth-child(7), .garage-work-table-shell td:nth-child(7){width:160px !important;}
+.garage-work-table-shell th:nth-child(8), .garage-work-table-shell td:nth-child(8){width:150px !important;}
+.garage-work-table-shell th:nth-child(9), .garage-work-table-shell td:nth-child(9){width:120px !important;}
+.garage-work-table-shell th:nth-child(10), .garage-work-table-shell td:nth-child(10){width:130px !important;}
+.garage-work-table-shell th:nth-child(11), .garage-work-table-shell td:nth-child(11){width:110px !important; position:sticky !important; right:0 !important; background:#fffdf8 !important; z-index:5 !important;}
+.garage-work-table-shell thead th:nth-child(11){z-index:7 !important;}
+.garage-work-table-shell .open-btn{min-width:76px !important; padding:8px 14px !important;}
+@media(max-width:1100px){
+  .garage-work-table-shell .table-wrap{min-width:1240px !important;}
+  .garage-work-table-shell table{width:1240px !important; min-width:1240px !important;}
+}
+.external-parts-page .page-header h1::after{content:"";}
+
+/* =========================================================
+   V93 FINAL TABLE VISIBILITY HOTFIX
+   Vehicle table, garage work table, parts distribution table
+   ========================================================= */
+.vehicle-table-scroll-shell,
+.garage-work-table-shell,
+.parts-distribution-table-shell{
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+  border-radius:18px !important;
+  padding-bottom:10px !important;
+}
+.vehicle-table-scroll-shell::-webkit-scrollbar,
+.garage-work-table-shell::-webkit-scrollbar,
+.parts-distribution-table-shell::-webkit-scrollbar{
+  height:12px !important;
+}
+.vehicle-table-scroll-shell::-webkit-scrollbar-track,
+.garage-work-table-shell::-webkit-scrollbar-track,
+.parts-distribution-table-shell::-webkit-scrollbar-track{
+  background:#efe6d8 !important;
+  border-radius:999px !important;
+}
+.vehicle-table-scroll-shell::-webkit-scrollbar-thumb,
+.garage-work-table-shell::-webkit-scrollbar-thumb,
+.parts-distribution-table-shell::-webkit-scrollbar-thumb{
+  background:#c5b49f !important;
+  border-radius:999px !important;
+}
+
+.vehicle-table-scroll-shell .table-wrap,
+.garage-work-table-shell .table-wrap,
+.parts-distribution-table-shell .table-wrap{
+  overflow:visible !important;
+  width:max-content !important;
+  max-width:none !important;
+}
+
+.vehicle-table-scroll-shell table{
+  width:1780px !important;
+  min-width:1780px !important;
+  table-layout:fixed !important;
+}
+.vehicle-table-scroll-shell th,
+.vehicle-table-scroll-shell td{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  padding:14px 12px !important;
+}
+.vehicle-table-scroll-shell th:nth-child(1), .vehicle-table-scroll-shell td:nth-child(1){width:145px !important;}
+.vehicle-table-scroll-shell th:nth-child(2), .vehicle-table-scroll-shell td:nth-child(2){width:120px !important;}
+.vehicle-table-scroll-shell th:nth-child(3), .vehicle-table-scroll-shell td:nth-child(3){width:115px !important;}
+.vehicle-table-scroll-shell th:nth-child(4), .vehicle-table-scroll-shell td:nth-child(4){width:180px !important;}
+.vehicle-table-scroll-shell th:nth-child(5), .vehicle-table-scroll-shell td:nth-child(5){width:170px !important;}
+.vehicle-table-scroll-shell th:nth-child(6), .vehicle-table-scroll-shell td:nth-child(6){width:210px !important;}
+.vehicle-table-scroll-shell th:nth-child(7), .vehicle-table-scroll-shell td:nth-child(7){width:115px !important;}
+.vehicle-table-scroll-shell th:nth-child(8), .vehicle-table-scroll-shell td:nth-child(8){width:190px !important;}
+.vehicle-table-scroll-shell th:nth-child(9), .vehicle-table-scroll-shell td:nth-child(9){width:190px !important;}
+.vehicle-table-scroll-shell th:nth-child(10), .vehicle-table-scroll-shell td:nth-child(10){
+  width:260px !important;
+  min-width:260px !important;
+  max-width:260px !important;
+  position:sticky !important;
+  right:0 !important;
+  background:#fffdf8 !important;
+  z-index:25 !important;
+  box-shadow:-18px 0 24px rgba(43,0,72,.12) !important;
+}
+.vehicle-table-scroll-shell thead th:nth-child(10){background:#efe8dd !important; z-index:30 !important;}
+.vehicle-table-scroll-shell .table-action-stack{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:8px !important;
+  width:100% !important;
+  min-width:220px !important;
+}
+.vehicle-table-scroll-shell .table-action-stack .open-btn{
+  width:100% !important;
+  min-width:0 !important;
+  padding:10px 10px !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+}
+
+.garage-work-table-shell .table-wrap{
+  min-width:1540px !important;
+}
+.garage-work-table-shell table{
+  width:1540px !important;
+  min-width:1540px !important;
+  table-layout:fixed !important;
+}
+.garage-work-table-shell th,
+.garage-work-table-shell td{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  padding:14px 12px !important;
+}
+.garage-work-table-shell th:nth-child(1), .garage-work-table-shell td:nth-child(1){width:190px !important;}
+.garage-work-table-shell th:nth-child(2), .garage-work-table-shell td:nth-child(2){width:160px !important;}
+.garage-work-table-shell th:nth-child(3), .garage-work-table-shell td:nth-child(3){width:230px !important;}
+.garage-work-table-shell th:nth-child(4), .garage-work-table-shell td:nth-child(4){width:120px !important;}
+.garage-work-table-shell th:nth-child(5), .garage-work-table-shell td:nth-child(5){width:170px !important;}
+.garage-work-table-shell th:nth-child(6), .garage-work-table-shell td:nth-child(6){width:170px !important;}
+.garage-work-table-shell th:nth-child(7), .garage-work-table-shell td:nth-child(7){width:170px !important;}
+.garage-work-table-shell th:nth-child(8), .garage-work-table-shell td:nth-child(8){width:160px !important;}
+.garage-work-table-shell th:nth-child(9), .garage-work-table-shell td:nth-child(9){width:130px !important;}
+.garage-work-table-shell th:nth-child(10), .garage-work-table-shell td:nth-child(10){width:140px !important;}
+.garage-work-table-shell th:nth-child(11), .garage-work-table-shell td:nth-child(11){
+  width:120px !important;
+  min-width:120px !important;
+  position:sticky !important;
+  right:0 !important;
+  background:#fffdf8 !important;
+  z-index:25 !important;
+  box-shadow:-14px 0 22px rgba(43,0,72,.12) !important;
+}
+.garage-work-table-shell thead th:nth-child(11){background:#efe8dd !important; z-index:30 !important;}
+.garage-filter-toolbar{
+  flex-wrap:wrap !important;
+  gap:12px !important;
+  align-items:center !important;
+}
+.garage-filter-toolbar .input{max-width:220px !important;}
+
+.parts-distribution-table-shell .table-wrap{min-width:1320px !important;}
+.parts-distribution-table-shell table{
+  width:1320px !important;
+  min-width:1320px !important;
+  table-layout:fixed !important;
+}
+.parts-distribution-table-shell th,
+.parts-distribution-table-shell td{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  padding:14px 12px !important;
+}
+.parts-distribution-table-shell th:nth-child(1), .parts-distribution-table-shell td:nth-child(1){width:170px !important;}
+.parts-distribution-table-shell th:nth-child(2), .parts-distribution-table-shell td:nth-child(2){width:190px !important;}
+.parts-distribution-table-shell th:nth-child(3), .parts-distribution-table-shell td:nth-child(3){width:220px !important;}
+.parts-distribution-table-shell th:nth-child(4), .parts-distribution-table-shell td:nth-child(4){width:150px !important;}
+.parts-distribution-table-shell th:nth-child(5), .parts-distribution-table-shell td:nth-child(5){width:210px !important;}
+.parts-distribution-table-shell th:nth-child(6), .parts-distribution-table-shell td:nth-child(6){width:270px !important;}
+.parts-distribution-table-shell th:nth-child(7), .parts-distribution-table-shell td:nth-child(7){width:80px !important;}
+.parts-distribution-table-shell th:nth-child(8), .parts-distribution-table-shell td:nth-child(8){width:120px !important;}
+.parts-distribution-table-shell th:nth-child(9), .parts-distribution-table-shell td:nth-child(9){width:140px !important;}
+
+/* =========================================================
+   V95 FINAL INVENTORY + VEHICLE TABLE + ROUTE CHART FIX
+   ========================================================= */
+.inventory-full-stock-chart{
+  min-height:520px !important;
+}
+.inventory-full-stock-chart .inventory-scroll-chart-box{
+  height:430px !important;
+  min-height:430px !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  padding-right:8px !important;
+}
+.inventory-full-stock-chart .chart-card-head{
+  align-items:flex-start !important;
+  gap:12px !important;
+}
+.inventory-full-stock-chart .chart-card-head .btn,
+.inventory-full-stock-chart .chart-card-head button{
+  white-space:nowrap !important;
+}
+.store-analytics-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(420px,1fr)) !important;
+  gap:22px !important;
+  align-items:stretch !important;
+}
+@media(max-width:1100px){
+  .store-analytics-grid{grid-template-columns:1fr !important;}
+}
+.vehicle-table-scroll-shell{
+  display:block !important;
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:scroll !important;
+  overflow-y:hidden !important;
+  scrollbar-gutter:stable !important;
+  padding-bottom:14px !important;
+}
+.vehicle-table-scroll-shell .table-wrap{
+  display:block !important;
+  width:max-content !important;
+  min-width:1900px !important;
+  max-width:none !important;
+  overflow:visible !important;
+}
+.vehicle-table-scroll-shell table{
+  width:1900px !important;
+  min-width:1900px !important;
+  max-width:none !important;
+  table-layout:fixed !important;
+}
+.vehicle-table-scroll-shell th,
+.vehicle-table-scroll-shell td{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.vehicle-table-scroll-shell th:nth-child(8),
+.vehicle-table-scroll-shell td:nth-child(8),
+.vehicle-table-scroll-shell th:nth-child(9),
+.vehicle-table-scroll-shell td:nth-child(9){
+  width:230px !important;
+  min-width:230px !important;
+}
+.vehicle-table-scroll-shell th:nth-child(10),
+.vehicle-table-scroll-shell td:nth-child(10){
+  width:280px !important;
+  min-width:280px !important;
+}
+.vehicle-table-scroll-shell::-webkit-scrollbar{
+  height:14px !important;
+}
+.vehicle-table-scroll-shell::-webkit-scrollbar-track{
+  background:#efe6d8 !important;
+  border-radius:999px !important;
+}
+.vehicle-table-scroll-shell::-webkit-scrollbar-thumb{
+  background:#b99f83 !important;
+  border-radius:999px !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   TRUE HORIZONTAL SCROLL FIX
+   Vehicles + Garage Work
+   ========================================================= */
+
+.vehicle-table-scroll-shell,
+.garage-work-table-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  border-radius: 18px !important;
+  background: #fffdf8 !important;
+  border: 1px solid rgba(47, 0, 73, 0.10) !important;
+}
+
+/* This is the important part: the inner Table wrapper must become wider */
+.vehicle-table-scroll-shell .table-wrap,
+.vehicle-table-scroll-shell .table-responsive,
+.vehicle-table-scroll-shell .vehicles-wide-table {
+  width: 1700px !important;
+  min-width: 1700px !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+.garage-work-table-shell .table-wrap,
+.garage-work-table-shell .table-responsive,
+.garage-work-table-shell .garage-wide-table {
+  width: 1600px !important;
+  min-width: 1600px !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+/* Force table not to shrink */
+.vehicle-table-scroll-shell table {
+  width: 1700px !important;
+  min-width: 1700px !important;
+  table-layout: fixed !important;
+}
+
+.garage-work-table-shell table {
+  width: 1600px !important;
+  min-width: 1600px !important;
+  table-layout: fixed !important;
+}
+
+/* Visible scrollbar */
+.vehicle-table-scroll-shell::-webkit-scrollbar,
+.garage-work-table-shell::-webkit-scrollbar {
+  height: 14px !important;
+}
+
+.vehicle-table-scroll-shell::-webkit-scrollbar-track,
+.garage-work-table-shell::-webkit-scrollbar-track {
+  background: #eadfce !important;
+  border-radius: 999px !important;
+}
+
+.vehicle-table-scroll-shell::-webkit-scrollbar-thumb,
+.garage-work-table-shell::-webkit-scrollbar-thumb {
+  background: #b69d7a !important;
+  border-radius: 999px !important;
+}
+
+/* Prevent ugly wrapping */
+.vehicle-table-scroll-shell th,
+.vehicle-table-scroll-shell td,
+.garage-work-table-shell th,
+.garage-work-table-shell td {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  vertical-align: middle !important;
+}
+
+/* Vehicle table exact widths */
+.vehicles-wide-table th:nth-child(1),
+.vehicles-wide-table td:nth-child(1) {
+  width: 160px !important;
+}
+
+.vehicles-wide-table th:nth-child(2),
+.vehicles-wide-table td:nth-child(2) {
+  width: 130px !important;
+}
+
+.vehicles-wide-table th:nth-child(3),
+.vehicles-wide-table td:nth-child(3) {
+  width: 120px !important;
+}
+
+.vehicles-wide-table th:nth-child(4),
+.vehicles-wide-table td:nth-child(4) {
+  width: 230px !important;
+}
+
+.vehicles-wide-table th:nth-child(5),
+.vehicles-wide-table td:nth-child(5) {
+  width: 180px !important;
+}
+
+.vehicles-wide-table th:nth-child(6),
+.vehicles-wide-table td:nth-child(6) {
+  width: 230px !important;
+}
+
+.vehicles-wide-table th:nth-child(7),
+.vehicles-wide-table td:nth-child(7) {
+  width: 130px !important;
+}
+
+.vehicles-wide-table th:nth-child(8),
+.vehicles-wide-table td:nth-child(8) {
+  width: 190px !important;
+}
+
+.vehicles-wide-table th:nth-child(9),
+.vehicles-wide-table td:nth-child(9) {
+  width: 190px !important;
+}
+
+.vehicles-wide-table th:nth-child(10),
+.vehicles-wide-table td:nth-child(10) {
+  width: 240px !important;
+}
+
+/* Garage Work table exact widths */
+.garage-wide-table th:nth-child(1),
+.garage-wide-table td:nth-child(1) {
+  width: 210px !important;
+}
+
+.garage-wide-table th:nth-child(2),
+.garage-wide-table td:nth-child(2) {
+  width: 150px !important;
+}
+
+.garage-wide-table th:nth-child(3),
+.garage-wide-table td:nth-child(3) {
+  width: 230px !important;
+}
+
+.garage-wide-table th:nth-child(4),
+.garage-wide-table td:nth-child(4) {
+  width: 130px !important;
+}
+
+.garage-wide-table th:nth-child(5),
+.garage-wide-table td:nth-child(5) {
+  width: 180px !important;
+}
+
+.garage-wide-table th:nth-child(6),
+.garage-wide-table td:nth-child(6) {
+  width: 180px !important;
+}
+
+.garage-wide-table th:nth-child(7),
+.garage-wide-table td:nth-child(7) {
+  width: 180px !important;
+}
+
+.garage-wide-table th:nth-child(8),
+.garage-wide-table td:nth-child(8) {
+  width: 170px !important;
+}
+
+.garage-wide-table th:nth-child(9),
+.garage-wide-table td:nth-child(9) {
+  width: 160px !important;
+}
+
+.garage-wide-table th:nth-child(10),
+.garage-wide-table td:nth-child(10) {
+  width: 160px !important;
+}
+
+.garage-wide-table th:nth-child(11),
+.garage-wide-table td:nth-child(11) {
+  width: 150px !important;
+}
+
+/* Vehicle buttons */
+.vehicles-wide-table .table-action-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.vehicles-wide-table .open-btn,
+.garage-wide-table .open-btn {
+  width: 100% !important;
+  min-width: 110px !important;
+}
+
+
+/* =========================================================
+   FINAL REAL SCROLLBAR FIX - VEHICLES + GARAGE WORK
+   Put this at the VERY BOTTOM of main.css
+   ========================================================= */
+
+/* The page itself must not clip the table */
+.vehicle-page,
+.page {
+  min-width: 0 !important;
+}
+
+/* The outer shell becomes the visible scroll box */
+.vehicle-table-scroll-shell.force-visible-scroll,
+.garage-work-table-shell.force-visible-scroll {
+  display: block !important;
+  width: 100% !important;
+  max-width: calc(100vw - 340px) !important;
+  overflow-x: scroll !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 330px) !important;
+  border: 1px solid #e7dcc9 !important;
+  border-radius: 20px !important;
+  background: #fffdf8 !important;
+  position: relative !important;
+  padding-bottom: 8px !important;
+}
+
+/* On smaller screens/tablets */
+@media (max-width: 980px) {
+  .vehicle-table-scroll-shell.force-visible-scroll,
+  .garage-work-table-shell.force-visible-scroll {
+    max-width: calc(100vw - 32px) !important;
+    max-height: 70vh !important;
+  }
+}
+
+/* Force the inner Table wrapper to be wider than the visible area */
+.vehicle-table-scroll-shell.force-visible-scroll > .table-wrap,
+.vehicle-table-scroll-shell.force-visible-scroll > .table-responsive,
+.vehicle-table-scroll-shell.force-visible-scroll > .vehicles-wide-table {
+  display: block !important;
+  width: 1750px !important;
+  min-width: 1750px !important;
+  max-width: none !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.garage-work-table-shell.force-visible-scroll > .table-wrap,
+.garage-work-table-shell.force-visible-scroll > .table-responsive,
+.garage-work-table-shell.force-visible-scroll > .garage-wide-table {
+  display: block !important;
+  width: 1650px !important;
+  min-width: 1650px !important;
+  max-width: none !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Force actual table size */
+.vehicle-table-scroll-shell.force-visible-scroll table {
+  width: 1750px !important;
+  min-width: 1750px !important;
+  max-width: none !important;
+  table-layout: fixed !important;
+}
+
+.garage-work-table-shell.force-visible-scroll table {
+  width: 1650px !important;
+  min-width: 1650px !important;
+  max-width: none !important;
+  table-layout: fixed !important;
+}
+
+/* Make scrollbars visible */
+.force-visible-scroll::-webkit-scrollbar {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.force-visible-scroll::-webkit-scrollbar-track {
+  background: #eadfce !important;
+  border-radius: 999px !important;
+}
+
+.force-visible-scroll::-webkit-scrollbar-thumb {
+  background: #b59c7b !important;
+  border-radius: 999px !important;
+  border: 3px solid #eadfce !important;
+}
+
+.force-visible-scroll::-webkit-scrollbar-thumb:hover {
+  background: #8f7354 !important;
+}
+
+/* Firefox scrollbar */
+.force-visible-scroll {
+  scrollbar-width: auto !important;
+  scrollbar-color: #b59c7b #eadfce !important;
+}
+
+/* Stop table text from wrapping/squeezing */
+.force-visible-scroll th,
+.force-visible-scroll td {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  vertical-align: middle !important;
+}
+
+/* Vehicle table widths */
+.vehicles-wide-table th:nth-child(1),
+.vehicles-wide-table td:nth-child(1) { width: 160px !important; }
+
+.vehicles-wide-table th:nth-child(2),
+.vehicles-wide-table td:nth-child(2) { width: 140px !important; }
+
+.vehicles-wide-table th:nth-child(3),
+.vehicles-wide-table td:nth-child(3) { width: 130px !important; }
+
+.vehicles-wide-table th:nth-child(4),
+.vehicles-wide-table td:nth-child(4) { width: 230px !important; }
+
+.vehicles-wide-table th:nth-child(5),
+.vehicles-wide-table td:nth-child(5) { width: 190px !important; }
+
+.vehicles-wide-table th:nth-child(6),
+.vehicles-wide-table td:nth-child(6) { width: 230px !important; }
+
+.vehicles-wide-table th:nth-child(7),
+.vehicles-wide-table td:nth-child(7) { width: 130px !important; }
+
+.vehicles-wide-table th:nth-child(8),
+.vehicles-wide-table td:nth-child(8) { width: 200px !important; }
+
+.vehicles-wide-table th:nth-child(9),
+.vehicles-wide-table td:nth-child(9) { width: 200px !important; }
+
+.vehicles-wide-table th:nth-child(10),
+.vehicles-wide-table td:nth-child(10) { width: 260px !important; }
+
+/* Garage table widths */
+.garage-wide-table th:nth-child(1),
+.garage-wide-table td:nth-child(1) { width: 210px !important; }
+
+.garage-wide-table th:nth-child(2),
+.garage-wide-table td:nth-child(2) { width: 150px !important; }
+
+.garage-wide-table th:nth-child(3),
+.garage-wide-table td:nth-child(3) { width: 240px !important; }
+
+.garage-wide-table th:nth-child(4),
+.garage-wide-table td:nth-child(4) { width: 130px !important; }
+
+.garage-wide-table th:nth-child(5),
+.garage-wide-table td:nth-child(5) { width: 180px !important; }
+
+.garage-wide-table th:nth-child(6),
+.garage-wide-table td:nth-child(6) { width: 190px !important; }
+
+.garage-wide-table th:nth-child(7),
+.garage-wide-table td:nth-child(7) { width: 190px !important; }
+
+.garage-wide-table th:nth-child(8),
+.garage-wide-table td:nth-child(8) { width: 180px !important; }
+
+.garage-wide-table th:nth-child(9),
+.garage-wide-table td:nth-child(9) { width: 170px !important; }
+
+.garage-wide-table th:nth-child(10),
+.garage-wide-table td:nth-child(10) { width: 170px !important; }
+
+.garage-wide-table th:nth-child(11),
+.garage-wide-table td:nth-child(11) { width: 150px !important; }
+
+/* Buttons clean */
+.vehicles-wide-table .table-action-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.vehicles-wide-table .open-btn,
+.garage-wide-table .open-btn {
+  width: 100% !important;
+  min-width: 110px !important;
+}
+/* =========================================================
+   V97 STOREKEEPER STOCK REPORT READABILITY FIX
+   Low stock + zero stock no label overlap, full details visible.
+   ========================================================= */
+.inventory-action-cards {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+}
+
+.inventory-search-panel {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin: 18px 0 22px !important;
+  width: 100% !important;
+}
+
+.inventory-search-panel .input {
+  flex: 1 1 auto !important;
+  max-width: none !important;
+  min-height: 54px !important;
+  font-weight: 900 !important;
+}
+
+.inventory-search-panel .btn {
+  flex: 0 0 auto !important;
+  min-height: 54px !important;
+}
+
+.stock-fit-card,
+.report-chart-card:has(.stock-report-fit-list) {
+  min-height: 420px !important;
+}
+
+.stock-fit-count {
+  display: inline-flex !important;
+  margin-top: 8px !important;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  background: #f1eaf7 !important;
+  color: var(--purple) !important;
+  font-weight: 1000 !important;
+  font-size: 12px !important;
+}
+
+.stock-fit-list,
+.stock-report-fit-list {
+  display: grid !important;
+  gap: 0 !important;
+  width: 100% !important;
+  max-height: 330px !important;
+  overflow: auto !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 18px !important;
+  background: #fffdf8 !important;
+}
+
+.stock-fit-head,
+.stock-fit-row,
+.stock-report-fit-head,
+.stock-report-fit-row {
+  display: grid !important;
+  grid-template-columns: minmax(120px, 1.1fr) minmax(220px, 2fr) 80px 90px minmax(110px, 1fr) !important;
+  gap: 10px !important;
+  align-items: center !important;
+  min-width: 720px !important;
+  padding: 12px 14px !important;
+  border-bottom: 1px solid var(--line) !important;
+}
+
+.stock-fit-head,
+.stock-report-fit-head {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  background: #f1ece3 !important;
+  color: var(--purple) !important;
+  font-weight: 1000 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: .4px !important;
+}
+
+.stock-fit-row,
+.stock-report-fit-row {
+  background: #fffdf8 !important;
+  font-size: 13px !important;
+}
+
+.stock-fit-row span,
+.stock-report-fit-row span {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.stock-fit-row small,
+.stock-report-fit-row small {
+  display: block !important;
+  color: var(--muted) !important;
+  font-size: 11px !important;
+  margin-top: 2px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.stock-low-pill,
+.stock-zero-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: fit-content !important;
+  min-width: 44px !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  font-weight: 1000 !important;
+}
+
+.stock-low-pill {
+  background: #fff0d9 !important;
+  color: #a05a00 !important;
+}
+
+.stock-zero-pill {
+  background: #ffe1e8 !important;
+  color: #b50030 !important;
+}
+
+.stock-fit-list::-webkit-scrollbar,
+.stock-report-fit-list::-webkit-scrollbar {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.stock-fit-list::-webkit-scrollbar-track,
+.stock-report-fit-list::-webkit-scrollbar-track {
+  background: #eadfce !important;
+  border-radius: 999px !important;
+}
+
+.stock-fit-list::-webkit-scrollbar-thumb,
+.stock-report-fit-list::-webkit-scrollbar-thumb {
+  background: #b59c7b !important;
+  border-radius: 999px !important;
+}
+
+/* Make store reports use a clean 2-column even grid, six charts total. */
+.reports-page .chart-grid,
+.reports-page .report-chart-grid,
+.reports-page .analytics-grid {
+  align-items: stretch !important;
+}
+
+@media(max-width: 900px) {
+  .inventory-search-panel {
+    display: grid !important;
+  }
+  .stock-fit-head,
+  .stock-fit-row,
+  .stock-report-fit-head,
+  .stock-report-fit-row {
+    min-width: 680px !important;
+  }
+}

@@ -4,21 +4,34 @@ import { useApp } from '../context/AppContext.jsx';
 import { Badge, Modal, PageHeader, Table } from '../components/UI.jsx';
 import { VehicleForm, AssessmentForm } from '../components/Forms.jsx';
 
+const VEHICLE_TYPES = ['BUGGY', 'QUAD', 'JEEP', 'HEAVY DUTY', 'TOOLS', 'CAR', 'UTV', 'MOTORCYCLE', 'TRUCK', 'TRAILER', 'EQUIPMENT', 'OTHER'];
+const DEFAULT_TYPES = ['BUGGY', 'QUAD'];
+
+function normalizeType(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function normalizePlateKey(plate) {
+  return String(plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function typeLabel(value) {
+  const t = normalizeType(value);
+  return t || 'UNKNOWN';
+}
+
 export default function Vehicles() {
   const { vehicles = [], vehicleCatalog = [], garageOps = [], assessments = [], can, setLastVehicleForAssessment } = useApp();
   const navigate = useNavigate();
 
   const [modal, setModal] = useState(null);
   const [filter, setFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('DEFAULT');
 
-  const getVehiclePlate = (v) => {
-    return v?.plate || v?.plateNumber || '';
-  };
-
-
+  const getVehiclePlate = (v) => v?.plate || v?.plateNumber || '';
   const displayPlate = (plate) => String(plate || '').replace(/\s*-\s*$/, '').trim();
 
-  const normalizePlateKey = (plate) => String(plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const getVehicleType = (v) => normalizeType(v?.vehicleType || v?.type || v?.customType || '');
 
   const formatDateTime = (value) => {
     if (!value || value === 'Pending') return '-';
@@ -61,18 +74,11 @@ export default function Vehicles() {
 
   const getVehicleImage = (v) => {
     const raw = String(v?.imageUrl || '').trim();
-
-    if (
-      raw &&
-      raw !== '-' &&
-      raw.toLowerCase() !== 'null' &&
-      raw.toLowerCase() !== 'undefined'
-    ) {
-      return raw;
-    }
+    if (raw && raw !== '-' && raw.toLowerCase() !== 'null' && raw.toLowerCase() !== 'undefined') return raw;
 
     const modelText = `${v?.model || ''} ${v?.type || ''} ${v?.vehicleType || ''}`.toLowerCase();
-
+    if (modelText.includes('jeep')) return '/vehicles/JEEP.png';
+    if (modelText.includes('buggy')) return '/vehicles/uforce-800xl.jpeg';
     if (modelText.includes('520')) return '/vehicles/quad-520l.jpeg';
     if (modelText.includes('450')) return '/vehicles/quad-450l.jpeg';
     if (modelText.includes('uforce') && modelText.includes('800')) return '/vehicles/uforce-800xl.jpeg';
@@ -84,23 +90,24 @@ export default function Vehicles() {
     return '/vehicles/quad-450l.jpeg';
   };
 
+  const filteredByType = useMemo(() => {
+    if (typeFilter === 'ALL') return vehicles;
+    const allowed = typeFilter === 'DEFAULT' ? DEFAULT_TYPES : [typeFilter];
+    return vehicles.filter((v) => allowed.includes(getVehicleType(v)));
+  }, [vehicles, typeFilter]);
+
   const suggestions = useMemo(() => {
     const q = filter.toLowerCase().trim();
-
     if (!q) return [];
+    if ([...vehicles, ...vehicleCatalog].some(v => normalizePlateKey(getVehiclePlate(v)) === normalizePlateKey(q))) return [];
 
     const all = [...vehicles, ...vehicleCatalog];
     const seen = new Set();
-
     return all
       .filter((v) => {
         const plate = getVehiclePlate(v).toUpperCase();
-
-        if (!plate) return false;
-        if (seen.has(plate)) return false;
-
+        if (!plate || seen.has(plate)) return false;
         seen.add(plate);
-
         return JSON.stringify(v).toLowerCase().includes(q);
       })
       .slice(0, 8);
@@ -108,13 +115,24 @@ export default function Vehicles() {
 
   const shown = useMemo(() => {
     const q = filter.toLowerCase().trim();
+    const base = filteredByType;
+    if (!q) return base;
 
-    if (!q) return vehicles;
-
-    return vehicles.filter((v) =>
-      JSON.stringify(v).toLowerCase().includes(q)
+    const exactPlateExists = base.some(v => normalizePlateKey(getVehiclePlate(v)) === normalizePlateKey(q));
+    return base.filter((v) => exactPlateExists
+      ? normalizePlateKey(getVehiclePlate(v)) === normalizePlateKey(q)
+      : JSON.stringify(v).toLowerCase().includes(q)
     );
-  }, [filter, vehicles]);
+  }, [filter, filteredByType]);
+
+  const typeCounts = useMemo(() => {
+    const counts = {};
+    vehicles.forEach((v) => {
+      const t = getVehicleType(v) || 'UNKNOWN';
+      counts[t] = (counts[t] || 0) + 1;
+    });
+    return counts;
+  }, [vehicles]);
 
   const openVehicleHistory = (plate) => {
     if (!plate) return;
@@ -130,58 +148,68 @@ export default function Vehicles() {
     <div className="page vehicle-page">
       <PageHeader
         title="Vehicles"
-        subtitle="Search a plate number to open the full garage history, assessments, parts issued, mechanics and repair records."
+        subtitle="Search by plate or filter by vehicle type. Each vehicle profile has history and assessment actions."
         action={can?.('vehicles') ? () => setModal({ type: 'add' }) : null}
         actionLabel="Add Vehicle"
       />
 
-      <div className="vehicle-search-zone">
-        <input
-          className="page-filter"
-          placeholder="Search plate, VIN, model, company, mechanic..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
+      <div className="vehicle-filter-panel">
+        <div className="vehicle-search-zone">
+          <input
+            className="page-filter"
+            placeholder="Search plate, VIN, model, company, mechanic..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
 
-        {suggestions.length > 0 && (
-          <div className="vehicle-search-results">
-            {suggestions.map((v) => {
-              const plate = getVehiclePlate(v);
+          {suggestions.length > 0 && (
+            <div className="vehicle-search-results">
+              {suggestions.map((v) => {
+                const plate = getVehiclePlate(v);
+                return (
+                  <button key={`${plate}-${v.vin || v.id || v.plateNumber}`} type="button" onClick={() => setFilter(plate)}>
+                    <div className="vehicle-search-img-box">
+                      <img
+                        src={getVehicleImage(v)}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = '/vehicles/quad-450l.jpeg';
+                        }}
+                      />
+                    </div>
+                    <span>
+                      <b>{plate}</b>
+                      <small>{v.model || v.type || v.vehicleType || 'Unknown model'} • {v.vin || 'No VIN'}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-              return (
-                <button
-                  key={`${plate}-${v.vin || v.id || v.plateNumber}`}
-                  type="button"
-                  onClick={() => openVehicleHistory(plate)}
-                >
-                  <div className="vehicle-search-img-box">
-                    <img
-                      src={getVehicleImage(v)}
-                      alt=""
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/vehicles/quad-450l.jpeg';
-                      }}
-                    />
-                  </div>
-
-                  <span>
-                    <b>{plate}</b>
-                    <small>
-                      {v.model || v.type || v.vehicleType || 'Unknown model'} •{' '}
-                      {v.vin || 'No VIN'}
-                    </small>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <div className="vehicle-type-tabs" aria-label="Vehicle type filters">
+          <button type="button" className={typeFilter === 'DEFAULT' ? 'active' : ''} onClick={() => setTypeFilter('DEFAULT')}>
+            Default: Buggy + Quad
+          </button>
+          <button type="button" className={typeFilter === 'ALL' ? 'active' : ''} onClick={() => setTypeFilter('ALL')}>
+            All ({vehicles.length})
+          </button>
+          {VEHICLE_TYPES.filter((t) => (typeCounts[t] || 0) > 0).map((t) => (
+            <button key={t} type="button" className={typeFilter === t ? 'active' : ''} onClick={() => setTypeFilter(t)}>
+              {t} ({typeCounts[t] || 0})
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Table
-        headers={[
+      <div className="vehicle-table-scroll-shell force-visible-scroll">
+  <Table
+    className="vehicles-wide-table"
+    headers={[
           'Plate',
+          'Vehicle Type',
           'Image',
           'Model / Type',
           'Internal/External',
@@ -195,6 +223,7 @@ export default function Vehicles() {
         {shown.map((v) => {
           const plate = getVehiclePlate(v);
           const latestTimes = getLatestVehicleTimes(v);
+          const vType = getVehicleType(v);
 
           return (
             <tr key={v.id || plate}>
@@ -203,6 +232,8 @@ export default function Vehicles() {
                 <br />
                 {v.vin ? <small>{v.vin}</small> : null}
               </td>
+
+              <td><Badge tone="neutral">{typeLabel(vType)}</Badge></td>
 
               <td>
                 <div className="vehicle-img-box">
@@ -225,7 +256,6 @@ export default function Vehicles() {
               </td>
 
               <td>{v.ownership || '-'}</td>
-
               <td>{v.companyName || v.owner || '-'}</td>
 
               <td>
@@ -233,8 +263,7 @@ export default function Vehicles() {
                   tone={
                     v.status === 'Active'
                       ? 'success'
-                      : v.status === 'Under Repair' ||
-                        v.status === 'Build in Progress'
+                      : v.status === 'Under Repair' || v.status === 'Build in Progress'
                       ? 'warning'
                       : 'danger'
                   }
@@ -244,31 +273,24 @@ export default function Vehicles() {
               </td>
 
               <td>{formatDateTime(latestTimes.checkIn)}</td>
-
               <td>{formatDateTime(latestTimes.checkOut)}</td>
 
               <td>
                 <div className="table-action-stack">
-                  <button
-                    className="open-btn"
-                    type="button"
-                    onClick={() => openVehicleHistory(plate)}
-                  >
-                    Open History
-                  </button>
-                  <button
-                    className="open-btn secondary-open-btn"
-                    type="button"
-                    onClick={() => startAssessmentForVehicle(v)}
-                  >
-                    Start Assessment
-                  </button>
+                  <button className="open-btn" type="button" onClick={() => openVehicleHistory(plate)}>Open History</button>
+                  <button className="open-btn secondary-open-btn" type="button" onClick={() => startAssessmentForVehicle(v)}>Start Assessment</button>
                 </div>
               </td>
             </tr>
           );
         })}
+        {!shown.length && (
+          <tr>
+            <td colSpan="10">No vehicles found for the selected type/filter.</td>
+          </tr>
+        )}
       </Table>
+      </div>
 
       {modal?.type === 'add' && (
         <Modal title="Add Vehicle" onClose={() => setModal(null)} wide>

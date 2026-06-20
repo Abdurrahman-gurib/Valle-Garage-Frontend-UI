@@ -86,6 +86,12 @@ export const api = {
     update: (id, payload) => apiRequest(`/inventory/${id}`, { method: 'PATCH', body: payload }),
     addStock: (id, payload) => apiRequest(`/inventory/${id}/add-stock`, { method: 'POST', body: payload })
   },
+
+  partsIssues: {
+    list: (query='') => apiRequest(`/parts-issues${query}`),
+    summary: (query='') => apiRequest(`/parts-issues/summary${query}`),
+    create: (payload) => apiRequest('/parts-issues', { method: 'POST', body: payload })
+  },
   transactions: {
     list: () => apiRequest('/transactions'),
     create: (payload) => apiRequest('/transactions', { method: 'POST', body: payload }),

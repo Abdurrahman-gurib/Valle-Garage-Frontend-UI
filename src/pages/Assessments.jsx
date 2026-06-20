@@ -40,6 +40,39 @@ function getPartsTotal(parts = []) {
   return parts.reduce((sum, part) => sum + getPartLineTotal(part), 0);
 }
 
+function findInventoryForPart(part, inventory = []) {
+  const partId = String(part?.partId || part?.inventoryItemId || part?.id || '').toLowerCase();
+  const sku = String(part?.sku || '').toLowerCase();
+  const name = String(part?.name || part?.partName || '').toLowerCase();
+  return inventory.find((item) => {
+    const itemId = String(item?.id || '').toLowerCase();
+    const itemSku = String(item?.sku || '').toLowerCase();
+    const itemName = String(item?.name || item?.partName || '').toLowerCase();
+    return (partId && itemId === partId) || (sku && itemSku === sku) || (name && itemName === name);
+  });
+}
+
+function normalizeAssessmentPart(part, inventory = []) {
+  const stockItem = findInventoryForPart(part, inventory);
+  const qty = Math.max(1, Number(part?.qty ?? part?.quantity ?? 1));
+  const sellingPrice = Number(part?.sellingPrice ?? part?.SellingPrice ?? stockItem?.sellingPrice ?? stockItem?.price ?? stockItem?.unitPrice ?? 0);
+  const costPrice = Number(part?.costPrice ?? part?.CostPrice ?? stockItem?.costPrice ?? stockItem?.lastCost ?? 0);
+  const lineTotal = Number(part?.lineTotal ?? part?.total ?? qty * sellingPrice);
+  return {
+    ...part,
+    partId: part?.partId || part?.inventoryItemId || stockItem?.id || 'manual',
+    sku: part?.sku || stockItem?.sku || 'MANUAL',
+    name: part?.name || part?.partName || stockItem?.name || 'Unnamed part',
+    qty,
+    sellingPrice,
+    costPrice,
+    lineTotal,
+    stockBefore: part?.stockBefore ?? part?.available ?? stockItem?.stock ?? stockItem?.currentStock ?? 0,
+    location: part?.location || stockItem?.location || 'Not set',
+    validated: part?.validated !== false,
+  };
+}
+
 export default function Assessments() {
   const app = useApp();
 
@@ -211,17 +244,7 @@ function AssessmentDetail({
   const [partSearch, setPartSearch] = useState('');
   const [extraQty, setExtraQty] = useState(1);
   const [parts, setParts] = useState(() =>
-    (assessment.parts || []).map((p) => {
-      const sellingPrice = getPartSellingPrice(p);
-      const qty = Number(p.qty || 1);
-      return {
-        ...p,
-        qty,
-        sellingPrice,
-        lineTotal: Number(p.lineTotal ?? qty * sellingPrice),
-        validated: p.validated !== false,
-      };
-    })
+    (assessment.parts || []).map((p) => normalizeAssessmentPart(p, inventory))
   );
   const [savingIssue, setSavingIssue] = useState(false);
 
@@ -229,6 +252,7 @@ function AssessmentDetail({
   const isCompleted = assessment.status === 'Completed';
   const isPartsIssued = assessment.status === 'Parts Issued';
   const canIssueParts = isStore && !isCompleted && !isPartsIssued;
+  const showStorePartLedger = isStore;
   const canReopenTicket = isStore || role === 'admin' || role === 'mechanic';
 
   const matchingParts = useMemo(() => {
@@ -356,59 +380,80 @@ function AssessmentDetail({
           </div>
         )}
 
-        <div className="required-parts-clean-table parts-fit-table" role="table" aria-label="Required and issued assessment parts">
-          <div className="parts-fit-head" role="row">
-            <span>Validate</span>
-            <span>SKU</span>
-            <span>Part</span>
-            <span>Available</span>
-            <span>Qty</span>
-            <span>Cost</span>
-            <span>Selling</span>
-            <span>Total</span>
-            <span>Location</span>
-            <span>Action</span>
+        {showStorePartLedger ? (
+          <div className="parts-ledger parts-ledger-store" role="table" aria-label="Required and issued assessment parts">
+            <div className="parts-ledger-head" role="row">
+              <span>Validate</span>
+              <span>SKU</span>
+              <span>Part</span>
+              <span>Available</span>
+              <span>Qty</span>
+              <span>Cost</span>
+              <span>Selling</span>
+              <span>Total</span>
+              <span>Location</span>
+              <span>Action</span>
+            </div>
+            <div className="parts-ledger-body">
+              {parts.map((p, i) => (
+                <div className="parts-ledger-row" role="row" key={`${p.name}-${i}`}>
+                  <div data-label="Validate">
+                    {canIssueParts ? (
+                      <label className="validate-check">
+                        <input type="checkbox" checked={p.validated !== false} onChange={() => toggleValidated(i)} />
+                        <span>✓</span>
+                      </label>
+                    ) : (
+                      <span>{p.validated === false ? 'No' : 'Yes'}</span>
+                    )}
+                  </div>
+                  <div data-label="SKU" className="parts-ledger-sku">{p.sku || p.partId || 'MANUAL'}</div>
+                  <div data-label="Part" className="parts-ledger-part"><b>{p.name || 'Unnamed part'}</b></div>
+                  <div data-label="Available">{p.stockBefore ?? 0}</div>
+                  <div data-label="Qty" className="parts-ledger-qty">
+                    {canIssueParts ? (
+                      <Input
+                        type="number"
+                        min="1"
+                        value={p.qty}
+                        onChange={(e) => {
+                          const qty = Math.max(1, Number(e.target.value || 1));
+                          setParts((prev) => prev.map((row, idx) => idx === i ? { ...row, qty, lineTotal: qty * Number(row.sellingPrice || 0) } : row));
+                        }}
+                      />
+                    ) : p.qty}
+                  </div>
+                  <div data-label="Cost">{formatMoney(p.costPrice || 0)}</div>
+                  <div data-label="Selling">{formatMoney(p.sellingPrice || 0)}</div>
+                  <div data-label="Total"><b>{formatMoney(getPartLineTotal(p))}</b></div>
+                  <div data-label="Location">{p.location || 'Not set'}</div>
+                  <div data-label="Action" className="parts-ledger-action">
+                    {canIssueParts ? <button className="part-remove-row" type="button" onClick={() => removePart(i)}>Remove</button> : <small>Locked</small>}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="parts-fit-body">
-            {parts.map((p, i) => (
-              <div className="parts-fit-row" role="row" key={`${p.name}-${i}`}>
-                <div data-label="Validate">
-                  {canIssueParts ? (
-                    <label className="validate-check">
-                      <input type="checkbox" checked={p.validated !== false} onChange={() => toggleValidated(i)} />
-                      <span>✓</span>
-                    </label>
-                  ) : (
-                    <span>{p.validated === false ? 'Not validated' : 'Validated'}</span>
-                  )}
+        ) : (
+          <div className="parts-ledger parts-ledger-mechanic" role="table" aria-label="Required parts for mechanic">
+            <div className="parts-ledger-head" role="row">
+              <span>SKU</span>
+              <span>Part</span>
+              <span>Qty</span>
+              <span>Status</span>
+            </div>
+            <div className="parts-ledger-body">
+              {parts.map((p, i) => (
+                <div className="parts-ledger-row" role="row" key={`${p.name}-${i}`}>
+                  <div data-label="SKU" className="parts-ledger-sku">{p.sku || p.partId || 'MANUAL'}</div>
+                  <div data-label="Part" className="parts-ledger-part"><b>{p.name || 'Unnamed part'}</b></div>
+                  <div data-label="Qty">{p.qty || 1}</div>
+                  <div data-label="Status"><Badge tone={isPartsIssued || isCompleted ? 'success' : 'warning'}>{isPartsIssued || isCompleted ? 'Issued / Locked' : 'Pending Store'}</Badge></div>
                 </div>
-                <div data-label="SKU" className="parts-fit-sku">{p.sku || p.partId || '-'}</div>
-                <div data-label="Part" className="parts-fit-part"><b>{p.name}</b></div>
-                <div data-label="Available">{p.stockBefore ?? '-'}</div>
-                <div data-label="Qty" className="parts-fit-qty">
-                  {canIssueParts ? (
-                    <Input
-                      type="number"
-                      min="1"
-                      value={p.qty}
-                      onChange={(e) => {
-                        const qty = Math.max(1, Number(e.target.value || 1));
-                        setParts((prev) => prev.map((row, idx) => idx === i ? { ...row, qty, lineTotal: qty * Number(row.sellingPrice || 0) } : row));
-                      }}
-                    />
-                  ) : p.qty}
-                </div>
-                <div data-label="Cost">{formatMoney(p.costPrice || 0)}</div>
-                <div data-label="Selling">{formatMoney(p.sellingPrice || 0)}</div>
-                <div data-label="Total"><b>{formatMoney(getPartLineTotal(p))}</b></div>
-                <div data-label="Location">{p.location || '-'}</div>
-                <div data-label="Action" className="parts-fit-action">
-                  {canIssueParts ? <button className="part-remove-row" type="button" onClick={() => removePart(i)}>Remove</button> : <small>Locked</small>}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       {canIssueParts && (
