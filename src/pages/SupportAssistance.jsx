@@ -1,3 +1,4 @@
+import React from 'react';
 import { useMemo, useState } from 'react';
 import { Badge, Button, Card, Field, Input, PageHeader, TextArea } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';

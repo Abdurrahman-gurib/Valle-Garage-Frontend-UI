@@ -7,10 +7,15 @@ import './styles/main.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AppProvider>
-        <App />
-      </AppProvider>
-    </BrowserRouter>
+<BrowserRouter
+  future={{
+    v7_startTransition: true,
+    v7_relativeSplatPath: true,
+  }}
+>
+  <AppProvider>
+    <App />
+  </AppProvider>
+</BrowserRouter>
   </React.StrictMode>
 );

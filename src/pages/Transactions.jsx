@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import { TransactionForm, VehicleForm } from '../components/Forms.jsx';
 import { Badge, Button, Field, Input, Modal, PageHeader, Select, Table, TextArea } from '../components/UI.jsx';

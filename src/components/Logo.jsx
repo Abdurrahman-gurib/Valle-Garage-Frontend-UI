@@ -1,1 +1,2 @@
+import React from 'react';
 export default function Logo() { return <div className="logo"><div className="logo-main">VALLÉ</div><div className="logo-sub">GARAGE OPERATIONS</div></div>; }

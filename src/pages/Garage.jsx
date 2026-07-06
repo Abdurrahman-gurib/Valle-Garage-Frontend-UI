@@ -1,9 +1,11 @@
+import React from 'react';
 import MultipleMechanicsSelect from '../components/MultipleMechanicsSelect.jsx';
 import { useMemo, useState } from "react";
 import { GarageOpForm } from "../components/Forms.jsx";
 import {
   Badge,
   Button,
+  Card,
   Field,
   Input,
   Modal,
@@ -13,7 +15,11 @@ import {
   TextArea,
 } from "../components/UI.jsx";
 import { useApp } from "../context/AppContext.jsx";
-function durationBetween(start, end){ const s=start?new Date(start):null; const e=end&&end!=='Pending'?new Date(end):null; if(!s||Number.isNaN(s.getTime())||!e||Number.isNaN(e.getTime())) return '-'; let sec=Math.max(0,Math.floor((e-s)/1000)); const d=Math.floor(sec/86400); sec%=86400; const h=Math.floor(sec/3600); sec%=3600; const m=Math.floor(sec/60); const ss=sec%60; return `${d}d ${h}h ${m}m ${ss}s`; }
+function durationBetween(start, end){ const s=start?new Date(start):null; const e=end&&end!=='Pending'?new Date(end):null; if(!s||Number.isNaN(s.getTime())||!e||Number.isNaN(e.getTime())) return '-'; let sec=Math.max(0,Math.floor((e-s)/1000)); const d=Math.floor(sec/86400); sec%=86400; const h=Math.floor(sec/3600); sec%=3600; const m=Math.floor(sec/60); if(d>0) return `${d}d ${h}h ${m}m`; return `${h}h ${m}m`; }
+function displayDateTime(v){ if(!v || v==='Pending') return '-'; const d=new Date(v); if(Number.isNaN(d.getTime())) return String(v).replace('T',' '); return d.toLocaleString('en-GB',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function laborText(value){ const n=Number(String(value||'').replace(/[^0-9.]/g,'')); if(!n) return '0h 0m'; const h=Math.floor(n); const m=Math.round((n-h)*60); return `${h}h ${m}m`; }
+function splitLabor(value){ const raw=String(value||''); const hMatch=raw.match(/(\d+(?:\.\d+)?)\s*(h|hr|hour)/i); const mMatch=raw.match(/(\d+(?:\.\d+)?)\s*(m|min|minute)/i); if(hMatch || mMatch){ return {hours: Number(hMatch?.[1]||0), minutes: Number(mMatch?.[1]||0)}; } const n=Number(raw.replace(/[^0-9.]/g,'')) || 0; const h=Math.floor(n); return {hours:h, minutes:Math.round((n-h)*60)}; }
+function combineLabor(hours, minutes){ return `${Number(hours||0)}h ${Number(minutes||0)}m`; }
 
 function toDate(v){ const d=v?new Date(v):null; return d && !Number.isNaN(d.getTime()) ? d : null; }
 function startDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
@@ -39,10 +45,10 @@ async function exportGarageXlsx(rows, period){
     ['Selected Period', period],
     ['Exported At', new Date().toLocaleString('en-GB')],
     [],
-    ['Process','Vehicle','Assessment/PO','Type','Mechanic','Check-in','Check-out','Duration','Expected','Status'],
-    ...rows.map(g=>[g.id,g.vehicle,g.assessmentId||g.transactionId||'-',g.type,g.mechanic,(g.checkInDateTime||g.start||'').replace?.('T',' ')||'-',(g.endDateTime||g.end||'').replace?.('T',' ')||'-',durationBetween(g.checkInDateTime||g.start,g.endDateTime||g.end),g.expectedDeliveryDate||'-',g.status])
+    ['Process','Vehicle','Assessment/PO','Type','All Mechanics','Garage Check-in','Parts Submitted','Check-out','Waiting Before Parts','Work Duration After Parts','Total Duration','Expected','Status'],
+    ...rows.map(g=>[g.id,g.vehicle,g.assessmentId||g.transactionId||'-',g.type,g.mechanicNames || g.mechanic,displayDateTime(g.checkInDateTime||g.start),displayDateTime(g.partsSubmittedAt),displayDateTime(g.endDateTime||g.end),durationBetween(g.checkInDateTime||g.start,g.partsSubmittedAt),durationBetween(g.partsSubmittedAt||g.checkInDateTime||g.start,g.endDateTime||g.end),durationBetween(g.checkInDateTime||g.start,g.endDateTime||g.end),g.expectedDeliveryDate||'-',g.status])
   ];
-  const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[18,18,20,18,24,22,22,20,16,16].map(w=>({wch:w}));
+  const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[18,18,22,18,30,22,22,22,22,24,22,16,16].map(w=>({wch:w}));
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Garage Work'); XLSX.writeFile(wb,`garage-work-${period}.xlsx`);
 }
 
@@ -50,11 +56,16 @@ export default function Garage() {
   const { garageOps, transactions, assessments } = useApp();
   const [modal, setModal] = useState(null);
   const [reportPeriod,setReportPeriod]=useState('all');
+  const [garageStatusFilter,setGarageStatusFilter]=useState('all');
+  const [garageSearch,setGarageSearch]=useState('');
   const [manualDate,setManualDate]=useState('');
   const [manualMonth,setManualMonth]=useState('');
   const [manualYear,setManualYear]=useState(String(new Date().getFullYear()));
   const garageFilters={manualDate,manualMonth,manualYear};
-  const filteredGarageOps = useMemo(()=>garageOps.filter(g=>periodOk(g.checkInDateTime || g.start || g.createdAt, reportPeriod, garageFilters)),[garageOps,reportPeriod,manualDate,manualMonth,manualYear]);
+  const filteredGarageOps = useMemo(()=>garageOps.filter(g=>{ const periodMatch = periodOk(g.checkInDateTime || g.start || g.createdAt || g.endDateTime, reportPeriod, garageFilters); const statusMatch = garageStatusFilter==='all' || String(g.status||'').toLowerCase()===garageStatusFilter.toLowerCase(); const q=garageSearch.trim().toLowerCase(); const searchMatch = !q || `${g.id} ${g.vehicle} ${g.assessmentId} ${g.transactionId} ${g.type} ${g.mechanic} ${g.status} ${g.workDone}`.toLowerCase().includes(q); return periodMatch && statusMatch && searchMatch; }).sort((a,b)=>String(b.checkInDateTime || b.start || b.endDateTime || '').localeCompare(String(a.checkInDateTime || a.start || a.endDateTime || ''))),[garageOps,reportPeriod,manualDate,manualMonth,manualYear,garageStatusFilter,garageSearch]);
+  const completedGarageOps = useMemo(()=>garageOps.filter(g=>['completed','delivered'].includes(String(g.status||'').toLowerCase())),[garageOps]);
+  const openGarageOps = useMemo(()=>garageOps.filter(g=>!['completed','delivered','cancelled'].includes(String(g.status||'').toLowerCase())),[garageOps]);
+  const todayGarageOps = useMemo(()=>garageOps.filter(g=>periodOk(g.checkInDateTime || g.start || g.createdAt, 'today', {})),[garageOps]);
   const buildRequests = transactions.filter(
     (t) =>
       ["External Vehicle Order", "Repair / Service Billing"].includes(t.type) &&
@@ -90,6 +101,7 @@ export default function Garage() {
           onOpen={(t) => setModal({ type: "fromTx", item: t })}
         />
       )}
+      <div className="garage-summary-grid section-small"><Card className="metric-card"><span>Total Garage Work</span><b>{garageOps.length}</b><small>All open and closed tickets</small></Card><Card className="metric-card"><span>Open / In Progress</span><b>{openGarageOps.length}</b><small>Active workshop tickets</small></Card><Card className="metric-card"><span>Completed / Closed</span><b>{completedGarageOps.length}</b><small>Closed work remains visible</small></Card><Card className="metric-card"><span>Today</span><b>{todayGarageOps.length}</b><small>Created/check-in today</small></Card></div>
       <div className="history-toolbar garage-filter-toolbar">
         <Select value={reportPeriod} onChange={(e)=>setReportPeriod(e.target.value)}>
           <option value="all">All Garage Work</option>
@@ -104,7 +116,7 @@ export default function Garage() {
         {reportPeriod==='manualDate' && <Input type="date" value={manualDate} onChange={(e)=>setManualDate(e.target.value)} />}
         {reportPeriod==='manualMonth' && <Input type="month" value={manualMonth} onChange={(e)=>setManualMonth(e.target.value)} />}
         {reportPeriod==='manualYear' && <Input type="number" min="2020" max="2100" value={manualYear} onChange={(e)=>setManualYear(e.target.value)} />}
-        <Button variant="secondary" onClick={()=>exportGarageXlsx(filteredGarageOps, reportPeriod)}>Export Garage Work XLSX</Button>
+        <Select value={garageStatusFilter} onChange={(e)=>setGarageStatusFilter(e.target.value)}><option value="all">All Status</option><option value="Pending">Pending</option><option value="Ongoing">Ongoing</option><option value="Completed">Completed</option><option value="Delivered">Delivered</option><option value="Cancelled">Cancelled</option></Select><Input placeholder="Search process, plate, assessment, mechanic, status..." value={garageSearch} onChange={(e)=>setGarageSearch(e.target.value)} /><Button variant="secondary" onClick={()=>exportGarageXlsx(filteredGarageOps, reportPeriod)}>Export Garage Work XLSX</Button>
       </div>
      <div className="garage-work-table-shell force-visible-scroll">
   <Table
@@ -114,10 +126,13 @@ export default function Garage() {
           "Vehicle",
           "Assessment/PO",
           "Type",
-          "Mechanic",
-          "Check-in",
+          "All Mechanics",
+          "Garage Check-in",
+          "Parts Submitted",
           "Check-out",
-          "Duration",
+          "Waiting Before Parts",
+          "Work Duration After Parts",
+          "Total Duration",
           "Expected",
           "Status",
           "Action",
@@ -131,9 +146,12 @@ export default function Garage() {
             <td>{g.vehicle}</td>
             <td>{g.assessmentId || g.transactionId || "-"}</td>
             <td>{g.type}</td>
-            <td>{g.mechanic}</td>
-            <td>{g.checkInDateTime?.replace("T", " ") || "-"}</td>
-            <td>{(g.endDateTime || g.end)?.replace?.("T", " ") || (g.status === "Completed" ? "Completed" : "-")}</td>
+            <td>{g.mechanicNames || g.mechanic || "-"}</td>
+            <td>{displayDateTime(g.checkInDateTime || g.start)}</td>
+            <td>{displayDateTime(g.partsSubmittedAt)}</td>
+            <td>{displayDateTime(g.endDateTime || g.end)}</td>
+            <td>{durationBetween(g.checkInDateTime || g.start, g.partsSubmittedAt)}</td>
+            <td>{durationBetween(g.partsSubmittedAt || g.checkInDateTime || g.start, g.endDateTime || g.end)}</td>
             <td>{durationBetween(g.checkInDateTime || g.start, g.endDateTime || g.end)}</td>
             <td>{g.expectedDeliveryDate || "-"}</td>
             <td>
@@ -256,6 +274,9 @@ function CardList({ title, items, onOpen }) {
 function GarageDetail({ op, onClose }) {
   const { updateGarageOp } = useApp();
   const [form, setForm] = useState({ ...op });
+  const initialLabor = splitLabor(op.labor || op.laborHours || 0);
+  const [laborHoursInput, setLaborHoursInput] = useState(initialLabor.hours);
+  const [laborMinutesInput, setLaborMinutesInput] = useState(initialLabor.minutes);
   const [saving, setSaving] = useState(false);
   const isCompleted = op.status === 'Completed' || op.status === 'Delivered';
   function file(e) {
@@ -265,7 +286,7 @@ function GarageDetail({ op, onClose }) {
     if (saving) return;
     setSaving(true);
     try {
-      await updateGarageOp(op.id, form);
+      await updateGarageOp(op.id, { ...form, labor: combineLabor(laborHoursInput, laborMinutesInput) });
       onClose();
     } finally {
       setSaving(false);
@@ -281,9 +302,13 @@ function GarageDetail({ op, onClose }) {
           <p>
             <b>Assessment / PO:</b> {op.assessmentId || op.transactionId || "-"}
           </p>
-          <p><b>Check-in:</b> {op.checkInDateTime?.replace?.('T',' ') || op.start?.replace?.('T',' ') || '-'}</p>
-          <p><b>Check-out:</b> {(op.endDateTime || op.end)?.replace?.('T',' ') || '-'}</p>
-          <p><b>Duration:</b> {durationBetween(op.checkInDateTime || op.start, op.endDateTime || op.end)}</p>
+          <p><b>Garage Check-in:</b> {displayDateTime(op.checkInDateTime || op.start)}</p>
+          <p><b>Parts Submitted:</b> {displayDateTime(op.partsSubmittedAt)}</p>
+          <p><b>Check-out:</b> {displayDateTime(op.endDateTime || op.end)}</p>
+          <p><b>All Mechanics:</b> {op.mechanicNames || op.mechanic || '-'}</p>
+          <p><b>Waiting Before Parts:</b> {durationBetween(op.checkInDateTime || op.start, op.partsSubmittedAt)}</p>
+          <p><b>Work Duration After Parts:</b> {durationBetween(op.partsSubmittedAt || op.checkInDateTime || op.start, op.endDateTime || op.end)}</p>
+          <p><b>Total Duration:</b> {durationBetween(op.checkInDateTime || op.start, op.endDateTime || op.end)}</p>
           <p>
             <b>Parts used:</b>{" "}
             {op.partsUsed?.map((p) => `${p.name} x${p.qty}`).join(", ") ||
@@ -322,25 +347,11 @@ function GarageDetail({ op, onClose }) {
             }
           />
         </Field>
-        <Field label="Labor Hours">
-          <Input
-            value={form.labor || ""}
-            disabled={isCompleted}
-            onChange={(e) => setForm({ ...form, labor: e.target.value })}
-          />
+        <Field label="Labour Time - Hours">
+          <Input type="number" min="0" value={laborHoursInput} disabled={isCompleted} onChange={(e)=>setLaborHoursInput(e.target.value)} />
         </Field>
-        <Field label="Payment Status">
-          <Select
-            value={form.paymentStatus || "Pending"}
-            disabled={isCompleted}
-            onChange={(e) =>
-              setForm({ ...form, paymentStatus: e.target.value })
-            }
-          >
-            <option>None</option>
-            <option>Pending</option>
-            <option>Paid</option>
-          </Select>
+        <Field label="Labour Time - Minutes">
+          <Input type="number" min="0" max="59" value={laborMinutesInput} disabled={isCompleted} onChange={(e)=>setLaborMinutesInput(e.target.value)} />
         </Field>
         <Field label="Attach Invoice">
           <Input type="file" disabled={isCompleted} onChange={file} />
@@ -356,9 +367,7 @@ function GarageDetail({ op, onClose }) {
       </div>
       <div className="button-row">
         <Button onClick={save} disabled={saving || isCompleted}>{isCompleted ? 'Ticket Closed' : saving ? 'Saving updates...' : 'Save Updates'}</Button>
-        <Button variant="secondary" onClick={() => window.print()}>
-          Print Job Sheet
-        </Button>
+
       </div>
     </div>
   );

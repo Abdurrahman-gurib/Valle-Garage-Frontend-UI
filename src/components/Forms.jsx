@@ -1,3 +1,4 @@
+import React from 'react';
 import VehicleChecklist from '../components/VehicleChecklist.jsx';
 import MultipleMechanicsSelect from '../components/MultipleMechanicsSelect.jsx';
 import PartsCostTable from '../components/PartsCostTable.jsx';
@@ -225,7 +226,9 @@ const [partId, setPartId] = useState('');
 const [partSearch, setPartSearch] = useState('');
 const [manualPart, setManualPart] = useState('');
 const [qty, setQty] = useState(1);
-const [selectedMechanics, setSelectedMechanics] = useState([]);
+const [selectedMechanics, setSelectedMechanics] = useState(currentUser?.id ? [currentUser.id] : []);
+  const [laborHoursInput, setLaborHoursInput] = useState(1);
+  const [laborMinutesInput, setLaborMinutesInput] = useState(0);
 const [savingAssessment, setSavingAssessment] = useState(false);
 const [parts, setParts] = useState([]);
  const partsTotalCost = parts.reduce((sum, p) => {
@@ -605,11 +608,12 @@ export function GarageOpForm({ onDone, transaction, assessment }) {
   const selectedAssessment = assessment || openAssessments[0];
   const transactionVehicle = vehicles.find(v=>v.sourceTransactionId === transaction?.id);
   const assessmentVehicle = vehicles.find(v=>v.id === selectedAssessment?.vehicleId || v.dbId === selectedAssessment?.vehicleId || v.plate === selectedAssessment?.vehicle);
-  const [form, setForm] = useState({ vehicleMode:'existing', vehicleId: transactionVehicle?.id || assessmentVehicle?.id || selectedAssessment?.vehicleId || vehicles[0]?.id || '', manualVehicle:selectedAssessment?.vehicle || '', assessmentId: selectedAssessment?.id || '', transactionId: transaction?.id || '', type: transaction ? 'Build / Assembly' : 'Repair', checkInDateTime: toLocalInputValue(), expectedDeliveryDate: transaction?.expectedDeliveryDate || assessmentVehicle?.expectedDeliveryDate || '', workDone: transaction ? 'Build/assembly started from purchase order.' : selectedAssessment ? `Garage process started from assessment ${selectedAssessment.id}. Issue: ${selectedAssessment.issue || ''}` : '', labor:'1 hr', status: transaction ? 'Build in Progress' : 'Ongoing', paymentStatus: 'Pending', mechanic: currentUser?.name || 'Workshop Team', partsUsed: selectedAssessment?.parts || [] });
+  const [form, setForm] = useState({ vehicleMode:'existing', vehicleId: transactionVehicle?.id || assessmentVehicle?.id || selectedAssessment?.vehicleId || vehicles[0]?.id || '', manualVehicle:selectedAssessment?.vehicle || '', assessmentId: selectedAssessment?.id || '', transactionId: transaction?.id || '', type: transaction ? 'Build / Assembly' : 'Repair', checkInDateTime: toLocalInputValue(), expectedDeliveryDate: transaction?.expectedDeliveryDate || assessmentVehicle?.expectedDeliveryDate || '', workDone: transaction ? 'Build/assembly started from purchase order.' : selectedAssessment ? `Garage process started from assessment ${selectedAssessment.id}. Issue: ${selectedAssessment.issue || ''}` : '', labor:'1h 0m', laborHours:1, status: transaction ? 'Build in Progress' : 'Ongoing', mechanic: currentUser?.name || 'Workshop Team', partsUsed: selectedAssessment?.parts || [] });
   const selectedVehicle = vehicles.find(v=>v.id===form.vehicleId || v.dbId===form.vehicleId);
-  const [selectedMechanics, setSelectedMechanics] = useState([]);
+  const [selectedMechanics, setSelectedMechanics] = useState(currentUser?.id ? [currentUser.id] : []);
+  const [laborHoursInput, setLaborHoursInput] = useState(1);
+  const [laborMinutesInput, setLaborMinutesInput] = useState(0);
   const [savingGarage, setSavingGarage] = useState(false);
-  useEffect(()=>{ if(selectedVehicle?.ownership === 'Internal' && form.paymentStatus === 'Pending') setForm(prev=>({...prev,paymentStatus:'None'})); }, [form.vehicleId]);
   async function save(e){
     e.preventDefault();
     if (savingGarage) return;
@@ -618,7 +622,9 @@ export function GarageOpForm({ onDone, transaction, assessment }) {
       const saved = await addGarageOp({
         ...form,
         partsUsed: form.partsUsed || selectedAssessment?.parts || [],
-        mechanicIds: selectedMechanics
+        labor: `${Number(laborHoursInput||0)}h ${Number(laborMinutesInput||0)}m`,
+        laborHours: Number(laborHoursInput || 0) + (Number(laborMinutesInput || 0) / 60),
+        mechanicIds: selectedMechanics,
       });
       onDone?.(saved || form);
     } finally {
@@ -643,9 +649,9 @@ export function GarageOpForm({ onDone, transaction, assessment }) {
   />
 </Field>
     <Field label="Status"><Select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>Ongoing</option><option>Build in Progress</option><option>Built and Testing</option><option>Delivered</option><option>Completed</option></Select></Field>
-    <Field label="Payment Status"><Select value={form.paymentStatus} onChange={e=>setForm({...form,paymentStatus:e.target.value})}><option>None</option><option>Pending</option><option>Paid</option></Select></Field>
     <Field label="Work Done / Work Plan"><TextArea required value={form.workDone} onChange={e=>setForm({...form,workDone:e.target.value})}/></Field>
-    <Field label="Labor Hours"><Input value={form.labor} onChange={e=>setForm({...form,labor:e.target.value})}/></Field>
+    <Field label="Labour Time - Hours"><Input type="number" min="0" value={laborHoursInput} onChange={e=>setLaborHoursInput(e.target.value)}/></Field>
+    <Field label="Labour Time - Minutes"><Input type="number" min="0" max="59" value={laborMinutesInput} onChange={e=>setLaborMinutesInput(e.target.value)}/></Field>
     <Field label="Photo Upload"><Input type="file" multiple /></Field>
     <div className="form-actions"><Button disabled={savingGarage}>{savingGarage ? 'Saving garage work...' : 'Save Garage Work'}</Button></div>
   </form>;

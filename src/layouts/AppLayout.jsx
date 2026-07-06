@@ -1,3 +1,4 @@
+import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import SearchBox from '../components/SearchBox.jsx';
@@ -10,6 +11,7 @@ const nav = [
   { to:'/assessments', key:'assessments', label:'Assessments', icon:'✓' },
   { to:'/inventory', key:'inventory', label:'Parts', icon:'▥' },
   { to:'/garage', key:'garage', label:'Garage Work', icon:'⚙' },
+  { to:'/wheel', key:'wheel', label:'Wheel', icon:'◌' },
   { to:'/external-parts', key:'external-parts', label:'Parts Distribution / Sell', icon:'⇄' },
   { to:'/fuel', key:'fuel', label:'Fuel System', icon:'◉' },
   { to:'/vehicle-out', key:'vehicle-out', label:'Vehicles In / Out', icon:'↗' },

@@ -1,3 +1,4 @@
+import React from 'react';
 
 export default function VehicleChecklist({ checklist = {}, setChecklist }) {
   const checklistItems = [

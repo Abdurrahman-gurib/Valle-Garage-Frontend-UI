@@ -7098,3 +7098,220 @@ body,
     min-width: 680px !important;
   }
 }
+
+
+/* ===== V100 professional layout, autocomplete, tablets and reporting fixes ===== */
+.field { position: relative !important; min-width: 0 !important; }
+.form-grid, .form-grid.four, .form-grid.six, .detail-grid { overflow: visible !important; align-items: start !important; }
+.professional-suggestion-panel, .suggestion-panel {
+  position: static !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin-top: 8px !important;
+  max-height: 240px !important;
+  overflow: auto !important;
+  z-index: 9999 !important;
+  box-shadow: 0 10px 28px rgba(43,0,70,.12) !important;
+  border: 1px solid #e7dcc9 !important;
+  background: #fff !important;
+}
+.suggestion-panel button, .professional-suggestion-panel button {
+  min-height: 46px !important;
+  display: grid !important;
+  grid-template-columns: minmax(110px, .8fr) minmax(140px, 1.2fr) !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+.suggestion-panel button b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.suggestion-panel button span { text-align: right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.selected-vehicle-chip, .section-tag-pill {
+  margin-top: 8px; border: 1px solid #d9f8df; background: #f0fff5; border-radius: 14px; padding: 10px 12px; display: grid; gap: 2px;
+}
+.selected-vehicle-chip span, .section-tag-pill { color: #6f6078; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
+.selected-vehicle-chip b { color: #2b0048; }
+.modal-wide, .modal.modal-wide { width: min(1320px, calc(100vw - 24px)) !important; max-width: min(1320px, calc(100vw - 24px)) !important; }
+.modal { overflow: auto !important; }
+.assessment-detail-clean, .modal .form-grid, .modal .detail-grid { max-width: 100% !important; }
+.garage-summary-grid, .store-dashboard-grid, .report-kpi-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:16px; margin-bottom:18px; }
+.garage-filter-toolbar, .history-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:16px 0; }
+.garage-filter-toolbar .input { min-width: 180px; }
+.table-wrap { width: 100% !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+.table-wrap table { min-width: 980px !important; }
+.garage-wide-table table, .garage-work-table-shell table { min-width: 1180px !important; }
+.test-track-card { border-top: 5px solid #24f66f !important; }
+.inventory-page .store-analytics-grid { display: none !important; }
+.inventory-search-panel { display:grid !important; grid-template-columns: minmax(280px, 1fr) auto !important; gap:12px !important; align-items:center !important; margin: 14px 0 18px !important; }
+.reports-page .chart-grid, .reports-page .report-chart-grid, .fuel-analytics-grid, .vehicle-analytics-grid, .store-analytics-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+.metric-card:before { content: attr(data-section); display:block; color:#ff315f; font-weight:1000; letter-spacing:.08em; font-size:11px; text-transform:uppercase; }
+@media (max-width: 1100px) {
+  .form-grid.four, .form-grid.six { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+  .garage-summary-grid, .store-dashboard-grid, .report-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .reports-page .chart-grid, .reports-page .report-chart-grid, .fuel-analytics-grid, .vehicle-analytics-grid, .store-analytics-grid { grid-template-columns:1fr !important; }
+}
+@media (max-width: 760px) {
+  .form-grid, .form-grid.four, .form-grid.six, .detail-grid, .inventory-search-panel { grid-template-columns: 1fr !important; }
+  .garage-summary-grid, .store-dashboard-grid, .report-kpi-grid { grid-template-columns: 1fr; }
+  .suggestion-panel button, .professional-suggestion-panel button { grid-template-columns: 1fr !important; gap: 3px !important; }
+  .suggestion-panel button span { text-align:left !important; }
+  .page { padding: 20px 12px !important; }
+  .modal-backdrop { padding: 8px !important; align-items:start !important; }
+  .modal { margin-top: 8px; }
+}
+
+
+/* V101 professional hotfixes: modal, dropdowns, garage, reports, tablet tables */
+.modal, .modal.modal-wide, .modal-wide{max-width:min(1180px,calc(100vw - 32px)) !important;width:min(1180px,calc(100vw - 32px)) !important;overflow:auto !important;}
+.modal .form-grid{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:18px !important;align-items:start !important;}
+.modal .field,.modal .field *{min-width:0 !important;max-width:100% !important;}
+.modal input,.modal select,.modal textarea,.modal .input{width:100% !important;max-width:100% !important;}
+.modal .form-actions,.modal .vehicle-selected-summary,.modal .assessment-cost-summary{grid-column:1/-1 !important;}
+.professional-assessment-start-modal{width:100%;max-width:100%;}
+.professional-assessment-start-modal .form-grid{grid-template-columns:repeat(2,minmax(280px,1fr)) !important;}
+.part-search-picker,.vehicle-search-zone,.fuel-vehicle-picker,.vehicle-out-picker,.plate-search-picker{position:relative;min-width:0;width:100%;}
+.part-search-results,.stock-picker-results,.vehicle-search-results,.fuel-search-results,.vehicle-out-search-results,.search-suggestions{z-index:9999 !important;max-height:300px !important;overflow:auto !important;box-shadow:0 18px 45px #2b004830 !important;}
+.part-search-results button,.stock-picker-results button,.vehicle-search-results button,.fuel-search-results button,.vehicle-out-search-results button{white-space:normal !important;text-align:left !important;line-height:1.25 !important;}
+.garage-summary-grid,.inventory-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:16px;margin-bottom:18px;}
+.garage-filter-toolbar,.history-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0;}
+.garage-filter-toolbar .input,.history-toolbar .input{min-width:180px;}
+.table-wrap{max-width:100%;overflow-x:auto !important;}
+.table-wrap table{table-layout:auto;}
+.table-action-stack{display:flex;flex-wrap:wrap;gap:8px;}
+.chart-box{min-height:280px !important;height:320px !important;}
+.report-chart-card,.pro-chart-card{min-height:430px;}
+.metric-card{min-height:130px;}
+@media(max-width:900px){
+  .modal,.modal.modal-wide,.modal-wide{width:calc(100vw - 16px) !important;max-width:calc(100vw - 16px) !important;padding:18px !important;}
+  .modal .form-grid,.professional-assessment-start-modal .form-grid{grid-template-columns:1fr !important;}
+  .garage-summary-grid,.inventory-kpi-grid,.stats-grid,.report-grid,.store-analytics-grid{grid-template-columns:1fr 1fr !important;}
+  .table-wrap table{min-width:900px;}
+  .page{padding:22px 12px !important;}
+}
+@media(max-width:640px){
+  .garage-summary-grid,.inventory-kpi-grid,.stats-grid,.report-grid,.store-analytics-grid{grid-template-columns:1fr !important;}
+  .history-toolbar,.garage-filter-toolbar{display:grid;grid-template-columns:1fr;width:100%;}
+  .history-toolbar .input,.garage-filter-toolbar .input,.history-toolbar button,.garage-filter-toolbar button{width:100%;}
+}
+
+
+/* V102 mechanic garage accuracy + professional modal/table layout */
+.modal .professional-assessment-start-modal,
+.modal .professional-assessment-start-modal form,
+.modal form.form-grid{
+  position: relative;
+  overflow: visible !important;
+}
+.professional-assessment-start-modal .form-grid,
+.modal .form-grid{
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(320px, 1fr)) !important;
+  gap: 18px 22px !important;
+  align-items: start !important;
+}
+.professional-assessment-start-modal .vehicle-selected-summary,
+.professional-assessment-start-modal .assessment-cost-summary,
+.professional-assessment-start-modal .part-search-picker,
+.modal .form-actions,
+.modal .notice,
+.modal .button-row{
+  grid-column: 1 / -1 !important;
+}
+.part-search-results,
+.inline-suggestions,
+.vehicle-search-suggestions,
+.fuel-vehicle-suggestions,
+.vehicle-out-suggestions{
+  z-index: 99999 !important;
+  max-height: min(340px, 55vh) !important;
+  overflow-y: auto !important;
+  box-shadow: 0 18px 45px rgba(28,0,50,.22) !important;
+}
+.garage-wide-table table{ min-width: 1760px !important; }
+.garage-work-table-shell{ overflow-x:auto !important; overflow-y:visible !important; }
+.garage-wide-table td, .garage-wide-table th{ vertical-align: top !important; }
+.button-row:empty{display:none;}
+@media (max-width: 900px){
+  .professional-assessment-start-modal .form-grid,
+  .modal .form-grid{ grid-template-columns: 1fr !important; }
+  .modal,.modal.modal-wide,.modal-wide{ width: calc(100vw - 16px) !important; max-width: calc(100vw - 16px) !important; padding: 18px !important; }
+  .garage-wide-table table{ min-width: 1500px !important; }
+}
+
+
+/* V103 professional responsive fixes */
+.suggestion-panel, .professional-suggestion-panel { position:absolute; z-index:9999; width:min(520px, calc(100vw - 32px)); max-height:260px; overflow:auto; background:#fff; border:1px solid rgba(45,0,71,.12); border-radius:18px; box-shadow:0 18px 48px rgba(31,0,51,.18); padding:8px; }
+.field, .form-field { position:relative; }
+.suggestion-panel button { width:100%; display:flex; justify-content:space-between; gap:12px; padding:12px 14px; border:0; border-radius:12px; background:#f8f4ff; color:#21002f; text-align:left; margin:4px 0; cursor:pointer; }
+.suggestion-panel button:hover { background:#efe6ff; }
+.table-wrap, .table-responsive { overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; }
+.table-wrap table, .table-responsive table { min-width:980px; }
+.chart-box { min-height:320px; height:340px; }
+.vehicle-out-page .tabs { flex-wrap:wrap; gap:10px; }
+.vehicle-out-page .metric-card b { word-break:break-word; }
+@media (max-width: 900px){ .form-grid.four, .form-grid.six { grid-template-columns:1fr !important; } .modal, .dialog, .drawer { width:96vw !important; max-width:96vw !important; } .suggestion-panel { left:0; right:auto; width:calc(100vw - 48px); } .chart-box { height:300px; } }
+
+
+/* V104 professional responsive fixes */
+.vehicle-today-card-row{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px;}
+.professional-vehicle-flow .table-wrap{overflow-x:auto;}
+.professional-vehicle-flow table{min-width:1100px;}
+.plate-edit-cell{position:relative;min-width:220px;}
+.table-suggestion-panel{position:absolute;left:0;right:0;top:52px;z-index:50;max-height:260px;overflow:auto;}
+.fuel-page .table-wrap,.wheel-page .table-wrap{overflow-x:auto;}
+.fuel-page table,.wheel-page table{min-width:980px;}
+.fuel-stock-cards{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:14px;overflow-x:auto;}
+.toolbar{display:flex;gap:12px;align-items:center;margin:12px 0;}
+.wheel-page input[type="number"]{min-width:90px;}
+@media (max-width: 900px){.vehicle-today-card-row,.fuel-stock-cards{display:flex;overflow-x:auto;}.vehicle-today-card-row .card,.fuel-stock-cards .card{min-width:220px;}.form-grid.four,.form-grid.six{grid-template-columns:1fr!important}.modal-content,.card{max-width:100%;}.professional-suggestion-panel{max-width:calc(100vw - 40px);}}
+
+/* V106 Recharts stability fix: prevent zero-size chart containers on hidden/tight panels */
+.chart-card,
+.report-chart-card,
+.pro-chart-card,
+.dashboard-chart-card,
+.live-chart-card {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.chart-box,
+.chart-card .chart-box,
+.report-chart-card .chart-box,
+.pro-chart-card .chart-box,
+.dashboard-chart-card .chart-box,
+.vehicle-analytics-grid .chart-box,
+.fuel-page .chart-box,
+.store-analytics-grid .chart-box,
+.dashboard-modern-chart-grid .chart-box {
+  display: block !important;
+  width: 100% !important;
+  min-width: 260px !important;
+  height: 300px !important;
+  min-height: 280px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.chart-box > .recharts-responsive-container,
+.chart-card .recharts-responsive-container {
+  width: 100% !important;
+  min-width: 260px !important;
+  height: 280px !important;
+  min-height: 220px !important;
+}
+
+@media (max-width: 900px) {
+  .chart-box,
+  .chart-card .chart-box,
+  .report-chart-card .chart-box,
+  .pro-chart-card .chart-box,
+  .dashboard-chart-card .chart-box,
+  .vehicle-analytics-grid .chart-box,
+  .fuel-page .chart-box,
+  .store-analytics-grid .chart-box,
+  .dashboard-modern-chart-grid .chart-box {
+    min-width: 100% !important;
+    height: 280px !important;
+    min-height: 260px !important;
+  }
+}

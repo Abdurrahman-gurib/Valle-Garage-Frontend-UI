@@ -1,3 +1,4 @@
+import React from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
@@ -300,11 +301,13 @@ export default function Vehicles() {
 
       {modal?.type === 'assessment' && (
         <Modal title={`Start Assessment - ${modal.vehicle?.plate || 'Vehicle'}`} onClose={() => setModal(null)} wide>
-          <AssessmentForm
-            prefillVehicleId={modal.vehicle?.id || modal.vehicle?.dbId || ''}
-            prefillVehiclePlate={modal.vehicle?.plate || ''}
-            onDone={() => setModal(null)}
-          />
+          <div className="professional-assessment-start-modal">
+            <AssessmentForm
+              prefillVehicleId={modal.vehicle?.id || modal.vehicle?.dbId || ''}
+              prefillVehiclePlate={modal.vehicle?.plate || ''}
+              onDone={() => setModal(null)}
+            />
+          </div>
         </Modal>
       )}
     </div>

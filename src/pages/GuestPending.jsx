@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import { Badge, Button, Card, Modal, PageHeader, Table } from '../components/UI.jsx';
 import { useApp } from '../context/AppContext.jsx';

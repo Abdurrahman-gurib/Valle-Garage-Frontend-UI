@@ -113,10 +113,19 @@ export const api = {
     list: () => apiRequest('/fuel-consumptions'),
     create: (payload) => apiRequest('/fuel-consumptions', { method: 'POST', body: payload })
   },
+  fuelStock: {
+    list: () => apiRequest('/fuel-stock'),
+    create: (payload) => apiRequest('/fuel-stock', { method: 'POST', body: payload })
+  },
   vehicleOut: {
     list: () => apiRequest('/vehicle-out'),
     create: (payload) => apiRequest('/vehicle-out', { method: 'POST', body: payload }),
     update: (id, payload) => apiRequest(`/vehicle-out/${id}`, { method: 'PATCH', body: payload })
+  },
+  wheels: {
+    list: () => apiRequest('/wheels'),
+    create: (payload) => apiRequest('/wheels', { method: 'POST', body: payload }),
+    update: (id, payload) => apiRequest(`/wheels/${id}`, { method: 'PATCH', body: payload })
   },
 
   guestTickets: {
