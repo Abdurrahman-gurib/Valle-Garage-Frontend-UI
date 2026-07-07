@@ -4,10 +4,17 @@ const API_URL = (() => {
   if (typeof window !== 'undefined' && window.location?.hostname) {
     const protocol = window.location.protocol || 'http:';
     const host = window.location.hostname;
-    return `${protocol}//${host}:3000/api`;
+    if (['localhost', '127.0.0.1', '0.0.0.0'].includes(host)) {
+      return `${protocol}//${host}:3000/api`;
+    }
+    return `${window.location.origin}/api`;
   }
-  return 'http://localhost:3000/api';
+  return '/api';
 })();
+
+export function getApiUrl() {
+  return API_URL;
+}
 
 export function getToken() {
   return localStorage.getItem('valle-token') || localStorage.getItem('token') || '';
@@ -44,7 +51,11 @@ export async function apiRequest(endpoint, options = {}) {
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!res.ok) {
     const message = typeof data === 'object' ? data?.message || data?.error || JSON.stringify(data) : data;
-    throw new Error(message || `Request failed: ${res.status}`);
+    const error = new Error(message || `Request failed: ${res.status}`);
+    error.status = res.status;
+    error.data = data;
+    error.isAuthError = res.status === 401 || res.status === 403;
+    throw error;
   }
   return data;
 }
@@ -80,6 +91,7 @@ export const api = {
   },
   inventory: {
     list: () => apiRequest('/inventory'),
+    get: (id) => apiRequest(`/inventory/${id}`),
     lowStock: () => apiRequest('/inventory/low-stock'),
     movements: () => apiRequest('/inventory/movements'),
     create: (payload) => apiRequest('/inventory', { method: 'POST', body: payload }),
@@ -124,8 +136,10 @@ export const api = {
   },
   wheels: {
     list: () => apiRequest('/wheels'),
+    stock: () => apiRequest('/wheels/stock'),
     create: (payload) => apiRequest('/wheels', { method: 'POST', body: payload }),
-    update: (id, payload) => apiRequest(`/wheels/${id}`, { method: 'PATCH', body: payload })
+    update: (id, payload) => apiRequest(`/wheels/${id}`, { method: 'PATCH', body: payload }),
+    updateStock: (id, payload) => apiRequest(`/wheels/stock/${id}`, { method: 'PATCH', body: payload })
   },
 
   guestTickets: {

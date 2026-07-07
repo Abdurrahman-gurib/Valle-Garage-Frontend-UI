@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { formatInput } from '../utils/time.js';
 import { Button, Field, Input, Select, TextArea } from './UI.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { api } from '../services/api.js';
 
 function cleanDisplayText(value) {
   return String(value || '').replace(/VallÃ©/g, 'Vallé').replace(/Advenature/g, 'Adventure');
@@ -267,23 +268,7 @@ function selectPartFromSearch(item) {
 
 async function fetchFreshInventoryItem(id) {
   try {
-    const token =
-      localStorage.getItem('token') ||
-      localStorage.getItem('accessToken') ||
-      localStorage.getItem('authToken') ||
-      '';
-
-    const res = await fetch(`http://localhost:3000/api/inventory/${id}`, {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
-
-    if (!res.ok) {
-      return null;
-    }
-
-    return await res.json();
+    return await api.inventory.get(id);
   } catch (err) {
     console.error('Failed to fetch fresh inventory item:', err);
     return null;
@@ -301,41 +286,6 @@ function getPartSellingPrice(item) {
       0
   );
 }
-async function fetchFreshInventoryItem(id) {
-  try {
-    const token =
-      localStorage.getItem('token') ||
-      localStorage.getItem('accessToken') ||
-      localStorage.getItem('authToken') ||
-      '';
-
-    const res = await fetch(`http://localhost:3000/api/inventory/${id}`, {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
-
-    if (!res.ok) return null;
-
-    return await res.json();
-  } catch (err) {
-    console.error('Failed to fetch fresh inventory item:', err);
-    return null;
-  }
-}
-
-function getPartSellingPrice(item) {
-  return Number(
-    item?.sellingPrice ??
-      item?.SellingPrice ??
-      item?.selling_price ??
-      item?.price ??
-      item?.unitPrice ??
-      item?.lastPrice ??
-      0
-  );
-}
-
 function buildPartLine(item, quantity) {
   const qtyNum = Number(quantity || 1);
   const sellingPrice = getPartSellingPrice(item);
@@ -677,6 +627,5 @@ export function TransactionForm({ onDone }) {
     <div className="form-actions"><Button>Save Transaction</Button></div>
   </form>;
 }
-
 
 

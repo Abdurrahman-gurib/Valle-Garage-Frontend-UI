@@ -107,10 +107,10 @@ function LowStockTooltip({ active, payload, label }){
 function StoreChartSet({ stockRiskData, categoryChartData, lowStockData, zeroStockData, titlePrefix = '', onExport }){
   return <>
     <ChartCard title={`${titlePrefix}Stock Risk Overview`} subtitle="Live DB count by stock risk level. No estimated values." badge="Inventory">
-      {stockRiskData.some((x)=>x.value>0) ? <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><PieChart><Pie data={stockRiskData} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{stockRiskData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer> : <EmptyChart/>}
+      {stockRiskData.some((x)=>x.value>0) ? <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={stockRiskData} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{stockRiskData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer> : <EmptyChart/>}
     </ChartCard>
     <ChartCard title={`${titlePrefix}Parts by Category`} subtitle="Category distribution from InventoryItem table." badge="Store">
-      {categoryChartData.length ? <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><BarChart data={categoryChartData} layout="vertical" margin={{left:80,right:24,top:8,bottom:8}}><CartesianGrid strokeDasharray="3 3"/><XAxis type="number" allowDecimals={false}/><YAxis type="category" dataKey="label" width={120} tick={{fontSize:11}}/><Tooltip content={<AnalyticsTooltip valueLabel="Parts" xAxisName="Category" yAxisName="Parts Count" />}/><Legend/><Bar dataKey="value" name="Parts count" fill="#6f3cff" radius={[0,8,8,0]}/></BarChart></ResponsiveContainer> : <EmptyChart/>}
+      {categoryChartData.length ? <ResponsiveContainer width="100%" height="100%"><BarChart data={categoryChartData} layout="vertical" margin={{left:80,right:24,top:8,bottom:8}}><CartesianGrid strokeDasharray="3 3"/><XAxis type="number" allowDecimals={false}/><YAxis type="category" dataKey="label" width={120} tick={{fontSize:11}}/><Tooltip content={<AnalyticsTooltip valueLabel="Parts" xAxisName="Category" yAxisName="Parts Count" />}/><Legend/><Bar dataKey="value" name="Parts count" fill="#6f3cff" radius={[0,8,8,0]}/></BarChart></ResponsiveContainer> : <EmptyChart/>}
     </ChartCard>
     <ChartCard title={`${titlePrefix}Low Stock Items`} subtitle="All items at or below reorder level. Export includes SKU, part, stock, reorder level, category and location." badge="Low stock" onExport={onExport ? ()=>onExport(`${titlePrefix.toLowerCase().replace(/\s+/g,'-')}low-stock-items`, lowStockData) : undefined}>
       <BarList rows={(lowStockData || []).map(row => ({...row, value: row.stock, displayValue:`Stock ${row.stock} / Reorder ${row.reorder}`}))} />
@@ -1129,22 +1129,22 @@ export default function Dashboard() {
 
         <div className="dashboard-chart-grid dashboard-modern-chart-grid mechanic-analytics-grid">
           <ChartCard title="Assessment Status" subtitle="Live assessment count by current status." badge="Mechanic">
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><PieChart><Pie data={group(assessments, (a)=>a.status || 'Unknown', () => 1)} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{group(assessments, (a)=>a.status || 'Unknown', () => 1).map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={group(assessments, (a)=>a.status || 'Unknown', () => 1)} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{group(assessments, (a)=>a.status || 'Unknown', () => 1).map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer>
           </ChartCard>
           <ChartCard title="Parts Given by Vehicle" subtitle="Issued assessment parts grouped by vehicle plate." badge="Parts">
             <BarList rows={group(assessments.flatMap((a)=>(a.parts || []).map((p)=>({...p, vehicle:a.vehicle || a.vehiclePlate || 'Unknown'}))), (p)=>p.vehicle, (p)=>n(p.qty || p.quantity || 1)).slice(0,10)} />
           </ChartCard>
           <ChartCard title="Completed Tickets" subtitle="Completed assessment tickets by date." badge="Completed">
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><LineChart data={chrono(assessments.filter((a)=>String(a.status||'').toLowerCase()==='completed'), (a)=>dayKey(a.updatedAt || a.createdAt), () => 1).slice(-14)}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip content={<AnalyticsTooltip valueLabel="Completed" xAxisName="Date" yAxisName="Completed Tickets"/>}/><Line dataKey="value" stroke="#24f66f" strokeWidth={3}/></LineChart></ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%"><LineChart data={chrono(assessments.filter((a)=>String(a.status||'').toLowerCase()==='completed'), (a)=>dayKey(a.updatedAt || a.createdAt), () => 1).slice(-14)}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip content={<AnalyticsTooltip valueLabel="Completed" xAxisName="Date" yAxisName="Completed Tickets"/>}/><Line dataKey="value" stroke="#24f66f" strokeWidth={3}/></LineChart></ResponsiveContainer>
           </ChartCard>
           <ChartCard title="Guest Ticket Intake" subtitle="Today and pending drop-off visibility." badge="Guests">
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><BarChart data={[{label:'Today', value:guestTicketsToday.length},{label:'Pending', value:openGuests.length},{label:'Garage visits', value:garageVisitsToday.length}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#6f3cff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%"><BarChart data={[{label:'Today', value:guestTicketsToday.length},{label:'Pending', value:openGuests.length},{label:'Garage visits', value:garageVisitsToday.length}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#6f3cff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
           </ChartCard>
           <ChartCard title="Garage Visits Today" subtitle="Every garage visit recorded today from live DB data." badge="Visits">
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><BarChart data={[{label:'Garage visits today', value:garageVisitsToday.length},{label:'Open garage work', value:openGarageWorkLive.length},{label:'Open assessments', value:openAssessmentsLive.length}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#2997ff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%"><BarChart data={[{label:'Garage visits today', value:garageVisitsToday.length},{label:'Open garage work', value:openGarageWorkLive.length},{label:'Open assessments', value:openAssessmentsLive.length}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#2997ff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
           </ChartCard>
           <ChartCard title="Open Garage Work" subtitle="Active garage work grouped by current status." badge="Open">
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><PieChart><Pie data={group(openGarageWorkLive, (g)=>g.status || 'Open', () => 1)} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{group(openGarageWorkLive, (g)=>g.status || 'Open', () => 1).map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={group(openGarageWorkLive, (g)=>g.status || 'Open', () => 1)} dataKey="value" nameKey="label" innerRadius={58} outerRadius={92} label={({label,value})=>`${label}: ${value}`}>{group(openGarageWorkLive, (g)=>g.status || 'Open', () => 1).map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip/><Legend/></PieChart></ResponsiveContainer>
           </ChartCard>
         </div>
       </div>
@@ -1250,7 +1250,7 @@ export default function Dashboard() {
             onExport={() => exportSimple('store-top-25-parts-used-issued', storeCharts.partsIssued)}
           >
             {storeCharts.partsIssued.length ? (
-              <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={storeCharts.partsIssued} dataKey="value" nameKey="label" innerRadius={55} outerRadius={90}>
                     {storeCharts.partsIssued.map((_, index) => (
@@ -1320,7 +1320,7 @@ export default function Dashboard() {
               { label:'Reopened tickets today', value:assessments.filter((a)=>isToday(a.reopenedAt || a.updatedAt || a.createdAt) && (a.reopenReason || String(a.status||'').toLowerCase()==='reopened')).length }
             ])}
           >
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><BarChart data={[
+            <ResponsiveContainer width="100%" height="100%"><BarChart data={[
               {label:'Parts issued', value:storePartsIssuedToday.length},
               {label:'Completed', value:assessments.filter((a)=>isToday(a.updatedAt || a.createdAt) && String(a.status||'').toLowerCase()==='completed').length},
               {label:'Reopened', value:assessments.filter((a)=>isToday(a.reopenedAt || a.updatedAt || a.createdAt) && (a.reopenReason || String(a.status||'').toLowerCase()==='reopened')).length}
@@ -1428,13 +1428,13 @@ export default function Dashboard() {
 
       <div className="dashboard-chart-grid dashboard-modern-chart-grid">
         <ChartCard title="Fuel Reserve Control" subtitle="Live reserve = fuel truck refill logs minus vehicle/tool fuel distribution." badge="Boss">
-          <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><BarChart data={[{label:'Petrol reserve', value:petrolReserveLive},{label:'Diesel reserve', value:dieselReserveLive},{label:'Petrol used today', value:petrolUsedToday},{label:'Diesel used today', value:dieselUsedToday}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#24f66f" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%"><BarChart data={[{label:'Petrol reserve', value:petrolReserveLive},{label:'Diesel reserve', value:dieselReserveLive},{label:'Petrol used today', value:petrolUsedToday},{label:'Diesel used today', value:dieselUsedToday}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip/><Bar dataKey="value" fill="#24f66f" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
         </ChartCard>
         <ChartCard title="Vehicle In / Out Today" subtitle="Today only: out records, still out and returned vehicles." badge="Vehicle">
-          <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><BarChart data={[{label:'Out today', value:outToday.length},{label:'Still out', value:activeVehicleOutLive},{label:'Returned today', value:outToday.filter(x=>x.endDateTime).length}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#2997ff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%"><BarChart data={[{label:'Out today', value:outToday.length},{label:'Still out', value:activeVehicleOutLive},{label:'Returned today', value:outToday.filter(x=>x.endDateTime).length}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#2997ff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
         </ChartCard>
         <ChartCard title="Store Wheel Control" subtitle="Wheel issued today and pending requests from mechanics." badge="Wheel">
-          <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}><BarChart data={[{label:'Wheel issued today', value:wheelIssuedToday},{label:'Wheel pending', value:wheelPendingLive},{label:'Low stock parts', value:lowStock.length},{label:'Zero stock', value:zeroStockCountLive}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#6f3cff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%"><BarChart data={[{label:'Wheel issued today', value:wheelIssuedToday},{label:'Wheel pending', value:wheelPendingLive},{label:'Low stock parts', value:lowStock.length},{label:'Zero stock', value:zeroStockCountLive}]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value" fill="#6f3cff" radius={[8,8,0,0]}/></BarChart></ResponsiveContainer>
         </ChartCard>
       </div>
 
@@ -1449,7 +1449,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('fuel-consumption-trend', charts.fuelTrend)}
         >
           {charts.fuelTrend.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={charts.fuelTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" label={{ value: 'X Axis: Date / Period', position: 'insideBottom', offset: -3 }} />
@@ -1473,7 +1473,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('fuel-by-vehicle-plate', charts.fuelByVehicle)}
         >
           {charts.fuelByVehicle.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.fuelByVehicle}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" label={{ value: 'X Axis: Vehicle Plate', position: 'insideBottom', offset: -3 }} />
@@ -1497,7 +1497,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('repaired-vehicles', charts.repairs)}
         >
           {charts.repairs.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={charts.repairs}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" label={{ value: 'X Axis: Date / Period', position: 'insideBottom', offset: -3 }} />
@@ -1533,7 +1533,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('repair-cost-trend', charts.repairCostTrend)}
         >
           {charts.repairCostTrend.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={charts.repairCostTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" label={{ value: 'X Axis: Date / Period', position: 'insideBottom', offset: -3 }} />
@@ -1557,7 +1557,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('vehicle-out-frequency', charts.vehicleOut)}
         >
           {charts.vehicleOut.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <ScatterChart data={charts.vehicleOut.map((row, index) => ({ ...row, x: index + 1, y: row.value }))}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="x" type="number" tickFormatter={(v) => charts.vehicleOut[v - 1]?.label || v} label={{ value: 'X Axis: Vehicle Plate', position: 'insideBottom', offset: -3 }} />
@@ -1617,7 +1617,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('parts-issued-mix', charts.partsIssued)}
         >
           {charts.partsIssued.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={charts.partsIssued}
@@ -1648,7 +1648,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('repair-cost-vs-repair-count', charts.repairCostByVehicle)}
         >
           {charts.repairCostByVehicle.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <ScatterChart>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
@@ -1683,7 +1683,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('admin-vehicle-activity-overview', charts.vehicleInOutOverview)}
         >
           {charts.vehicleInOutOverview.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={charts.vehicleInOutOverview}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" />
@@ -1707,7 +1707,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('admin-fleet-by-type', charts.vehicleFleetTypeAdmin)}
         >
           {charts.vehicleFleetTypeAdmin.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={charts.vehicleFleetTypeAdmin} dataKey="value" nameKey="label" innerRadius={55} outerRadius={90}>
                   {charts.vehicleFleetTypeAdmin.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
@@ -1728,7 +1728,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('admin-route-usage-by-biking-type', charts.routeUsageAdmin)}
         >
           {charts.routeUsageAdmin.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.routeUsageAdmin} margin={{ left: 10, right: 20, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" />
@@ -1754,7 +1754,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('admin-peak-out-in-time', charts.peakOutInAdmin)}
         >
           {charts.peakOutInAdmin.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={charts.peakOutInAdmin}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" interval={0} />
@@ -1777,7 +1777,7 @@ export default function Dashboard() {
           onExport={() => exportSimple('admin-fuel-type-usage', charts.fuelByVehicleTypeAdmin)}
         >
           {charts.fuelByVehicleTypeAdmin.length ? (
-            <ResponsiveContainer width="100%" height={280} minWidth={260} minHeight={220}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={charts.fuelByVehicleTypeAdmin} dataKey="value" nameKey="label" innerRadius={55} outerRadius={90}>
                   {charts.fuelByVehicleTypeAdmin.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}

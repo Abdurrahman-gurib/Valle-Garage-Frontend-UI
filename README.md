@@ -865,11 +865,11 @@ npm run dev -- --port 5173 --strictPort
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | `admin@vallepark.com` | `password123` |
-| Mechanic | `mechanic@vallepark.com` | `password123` |
-| Store Keeper | `store@vallepark.com` | `password123` |
-| Fuel Manager | `fuel@vallepark.com` | `password123` |
-| Vehicle Manager | `vehicle@vallepark.com` | `password123` |
+| Admin | `admin@vallepark.com` | Set with backend `SEED_INITIAL_PASSWORD`, then rotate |
+| Mechanic | `mechanic@vallepark.com` | Set with backend `SEED_INITIAL_PASSWORD`, then rotate |
+| Store Keeper | `store@vallepark.com` | Set with backend `SEED_INITIAL_PASSWORD`, then rotate |
+| Fuel Manager | `fuel@vallepark.com` | Set with backend `SEED_INITIAL_PASSWORD`, then rotate |
+| Vehicle Manager | `vehicle@vallepark.com` | Set with backend `SEED_INITIAL_PASSWORD`, then rotate |
 
 ---
 

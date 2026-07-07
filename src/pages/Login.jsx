@@ -11,8 +11,6 @@ const roles = [
     subtitle: "Full System Admin",
     desc: "Manage users, fleet, inventory, assessments, reports and rules.",
     color: "pink",
-    email: "admin@vallepark.com",
-    pass: "password123",
   },
   {
     role: "mechanic",
@@ -20,8 +18,6 @@ const roles = [
     subtitle: "Garage Mechanic",
     desc: "Create assessments and record repairs, servicing and maintenance.",
     color: "green",
-    email: "mechanic@vallepark.com",
-    pass: "password123",
   },
   {
     role: "store",
@@ -29,8 +25,6 @@ const roles = [
     subtitle: "Spare Parts Keeper",
     desc: "Manage parts, barcode lookup, issuance and low-stock alerts.",
     color: "yellow",
-    email: "store@vallepark.com",
-    pass: "password123",
   },
   {
     role: "fuel",
@@ -38,8 +32,6 @@ const roles = [
     subtitle: "Fuel Management System",
     desc: "Record fuel litres and extract fuel reports by quad, day, week or month.",
     color: "green",
-    email: "fuel@vallepark.com",
-    pass: "password123",
   },
   {
     role: "vehicle_manager",
@@ -47,8 +39,6 @@ const roles = [
     subtitle: "Vehicles Management System",
     desc: "Track quad activity, guide, invoice, out time, return time and trip duration.",
     color: "yellow",
-    email: "vehicle@vallepark.com",
-    pass: "password123",
   },
   {
     role: "guest",
@@ -56,8 +46,6 @@ const roles = [
     subtitle: "Garage Drop-off",
     desc: "Create an emergency garage ticket when no mechanic is around.",
     color: "guest",
-    email: "guest@vallepark.com",
-    pass: "",
   },
 ];
 
@@ -92,8 +80,8 @@ export default function Login() {
 
   function choose(r) {
     setSelected(r);
-    setEmail(r.email);
-    setPassword(r.pass);
+    setEmail("");
+    setPassword("");
     setShowPassword(false);
     setError("");
   }

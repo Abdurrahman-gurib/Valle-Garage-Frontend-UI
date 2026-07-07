@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { api, clearSession, saveSession } from '../services/api.js';
+import { api, clearSession, getToken, saveSession } from '../services/api.js';
 import { vehicleCatalog } from '../data/vehicleCatalog.js';
 import { formatInput, todayInput, formatDateTime, parseAppDate, secondsBetween, durationLabel } from '../utils/time.js';
 
@@ -136,6 +136,7 @@ function normalizeFuel(f) { const v = f.vehicle ? normalizeVehicle(f.vehicle) : 
 function normalizeVehicleOut(o) { const v = o.vehicle ? normalizeVehicle(o.vehicle) : null; const start = normalizeDate(o.startDateTime); const end = normalizeDate(o.endDateTime); const durationSeconds = Number(o.durationSeconds ?? secondsBetween(start, end)); const bikingVehicleType = o.bikingVehicleType || o.quadActivity || o.activityType || ''; const destinationRoute = o.destinationRoute || o.destination || ''; return { id:o.id, vehicleId:o.vehicleId, vehicle:v?.plate || o.vehiclePlate || o.vehicle || '', activityType:o.activityType || bikingVehicleType || 'Activity', destination:o.destination || destinationRoute || '', destinationRoute, driverName:o.driverName || '', invoiceNumber:o.invoiceNumber || '', guideName:o.guideName || '', quadActivity:o.quadActivity || bikingVehicleType || '', bikingVehicleType, tripDuration:o.tripDuration || '', startDateTime:start, endDateTime:end, durationSeconds, durationLabel:o.durationLabel || durationLabel(durationSeconds), isCurrentlyOut: !end, notes:o.notes || '', recordedBy:o.recordedBy?.name || '' }; }
 function normalizeFuelStockLog(x){ return { id:x.id, fuelType:String(x.fuelType||'').toUpperCase(), litres:Number(x.litres||0), source:x.source||'', invoiceNumber:x.invoiceNumber||'', receivedBy:x.receivedBy||'', notes:x.notes||'', recordedAt:normalizeDate(x.recordedAt)||x.recordedAt||'' }; }
 function normalizeWheelRequest(w){ const v=w.vehicle ? normalizeVehicle(w.vehicle) : null; return { id:w.id, vehicleId:w.vehicleId, vehicle:v?.plate || w.vehiclePlate || '', vehicleType:w.vehicleType || v?.type || '', wheelType:w.wheelType || '', quantity:Number(w.quantity||1), reason:w.reason||'', status:w.status||'REQUESTED', requestedBy:w.requestedBy?.name||'', issuedBy:w.issuedBy?.name||'', issuedAt:normalizeDate(w.issuedAt)||w.issuedAt||'', notes:w.notes||'', createdAt:normalizeDate(w.createdAt)||w.createdAt||'' }; }
+function normalizeWheelStock(w){ return { id:w.id, sku:w.sku || '', wheelType:w.wheelType || '', vehicleClass:w.vehicleClass || '', size:w.size || '', stock:Number(w.stock ?? w.currentStock ?? 0), currentStock:Number(w.stock ?? w.currentStock ?? 0), reorderLevel:Number(w.reorderLevel || 0), location:w.location || '', condition:w.condition || 'Ready', createdAt:normalizeDate(w.createdAt)||w.createdAt||'', updatedAt:normalizeDate(w.updatedAt)||w.updatedAt||'' }; }
 
 function vehiclePayload(v) { return { plateNumber: v.plate, vin: v.vin || undefined, vehicleType: v.type === 'Other' ? v.customType || 'Other' : v.type, ownership: v.ownership === 'External' ? (v.sourceTransactionId ? 'CUSTOMER_ORDER' : 'EXTERNAL') : 'INTERNAL', ownerName: v.owner || undefined, companyName: v.companyName || undefined, deliveryPersonName: v.deliveryPersonName || undefined, contactNumber: v.contactNumber || undefined, email: v.email || undefined, manufacturer: v.manufacturer || 'CFMOTO', model: v.model || undefined, cc: v.cc || undefined, imageUrl: v.imageUrl || undefined, status: statusToApi[v.status] || 'ACTIVE', currentHourMeter: Number(v.hours || 0), checkInDateTime: v.checkInDateTime || undefined, expectedDeliveryDate: v.expectedDeliveryDate || undefined, mechanicIds: arr(v.mechanicIds), mechanicNames: arr(v.mechanicNames), vehicleChecks: v.vehicleChecks || undefined, notes: [v.notes, v.model ? `Model: ${v.model}` : '', v.cc ? `CC: ${v.cc}` : ''].filter(Boolean).join(' | '), transactionId: v.sourceTransactionId || undefined }; }
 function assessmentPayload(data) { return { vehicleId: data.vehicleId, status: assessmentToApi[data.status] || 'OPEN', issuesDetected: data.issue, conclusion: data.conclusion || undefined, requiredParts: arr(data.parts).map(p => ({ partName: p.name, name:p.name, quantity: Number(p.qty || 1), qty:Number(p.qty||1), partId: p.partId, inventoryItemId:p.partId, sku:p.sku, costPrice:p.costPrice, sellingPrice:p.sellingPrice, lineCostTotal:p.lineCostTotal, lineSellingTotal:p.lineSellingTotal, lineTotal:p.lineSellingTotal || p.lineTotal, margin:p.margin })), photos: arr(data.photos) }; }
@@ -146,6 +147,7 @@ function withinDateFilter(dateStr, filter) { if (!filter || filter.type === 'all
 
 export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => { const saved = localStorage.getItem('valle-user'); return saved ? JSON.parse(saved) : null; });
+  const [sessionReady, setSessionReady] = useState(false);
   const [users, setUsers] = useState([]);
   const [mechanicUsers, setMechanicUsers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -161,6 +163,7 @@ export function AppProvider({ children }) {
   const [vehicleOutActivities, setVehicleOutActivities] = useState([]);
   const [fuelStockLogs, setFuelStockLogs] = useState([]);
   const [wheelRequests, setWheelRequests] = useState([]);
+  const [wheelStock, setWheelStock] = useState([]);
   const [externalPartsIssues, setExternalPartsIssues] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [reportAnalytics, setReportAnalytics] = useState(null);
@@ -184,6 +187,47 @@ export function AppProvider({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function verifySavedSession() {
+      if (!currentUser || currentUser.role === 'guest') {
+        if (!cancelled) setSessionReady(true);
+        return;
+      }
+
+      if (!getToken()) {
+        clearSession();
+        if (!cancelled) {
+          setCurrentUser(null);
+          setApiStatus('offline');
+          setSessionReady(true);
+        }
+        return;
+      }
+
+      try {
+        const me = await api.me();
+        if (cancelled) return;
+        const verifiedUser = { ...currentUser, ...normalizeUser(me), role: currentUser.role, label: roleLabel[currentUser.role] || currentUser.label };
+        saveSession(getToken(), verifiedUser);
+        setCurrentUser(verifiedUser);
+        setApiStatus('online');
+      } catch (err) {
+        if (!cancelled) {
+          clearSession();
+          setCurrentUser(null);
+          setApiStatus('offline');
+        }
+      } finally {
+        if (!cancelled) setSessionReady(true);
+      }
+    }
+
+    verifySavedSession();
+    return () => { cancelled = true; };
+  }, []);
+
   function notify(message, type = 'success') {
     setAppMessage({ message, type, at: Date.now() });
   }
@@ -204,8 +248,14 @@ export function AppProvider({ children }) {
       return data;
     } catch (err) {
       const message = err?.message || 'Unexpected API error';
-      console.warn(`[API fallback] ${label}:`, message);
       setApiStatus('offline');
+      if (err?.isAuthError) {
+        clearSession();
+        setCurrentUser(null);
+        if (!isBackgroundLoad) notify('Your session expired. Please log in again.', 'error');
+        return null;
+      }
+      console.warn(`[API fallback] ${label}:`, message);
       if (!isBackgroundLoad) {
         notify(`${label.replace(/^./, c => c.toUpperCase())} failed: ${message}`, 'error');
       }
@@ -215,6 +265,7 @@ export function AppProvider({ children }) {
     }
   }
   async function refreshAll() {
+    if (!sessionReady || !currentUser || currentUser.role === 'guest') return;
     const role = currentUser?.role;
 
     const canLoadUsers = role === 'admin';
@@ -242,6 +293,7 @@ export function AppProvider({ children }) {
       safe('load vehicle out', () => api.vehicleOut.list(), data => setVehicleOutActivities(arr(data).map(normalizeVehicleOut))),
       canLoadFuelStock ? safe('load fuel stock', () => api.fuelStock.list(), data => setFuelStockLogs(arr(data?.logs || data).map(normalizeFuelStockLog))) : Promise.resolve(),
       canLoadWheelRequests ? safe('load wheel requests', () => api.wheels.list(), data => setWheelRequests(arr(data).map(normalizeWheelRequest))) : Promise.resolve(),
+      canLoadWheelRequests ? safe('load wheel stock', () => api.wheels.stock(), data => setWheelStock(arr(data).map(normalizeWheelStock))) : Promise.resolve(),
       canLoadStoreData ? safe('load parts distribution', () => api.partsIssues.list('?period=all'), data => setExternalPartsIssues(arr(data))) : Promise.resolve(),
 
       canLoadGuestTickets
@@ -253,11 +305,44 @@ export function AppProvider({ children }) {
       safe('load report analytics', () => api.reports.analytics('?period=monthly'), data => setReportAnalytics(data))
     ]);
   }
-  useEffect(() => { if (currentUser && currentUser.role !== 'guest') refreshAll(); }, [currentUser?.id]);
+  useEffect(() => { if (sessionReady && currentUser && currentUser.role !== 'guest') refreshAll(); }, [sessionReady, currentUser?.id]);
 
-  useEffect(() => { if (!currentUser || currentUser.role === 'guest') return; const id = setInterval(() => refreshAll(), 30000); return () => clearInterval(id); }, [currentUser?.id]);
+  useEffect(() => { if (!sessionReady || !currentUser || currentUser.role === 'guest') return; const id = setInterval(() => refreshAll(), 30000); return () => clearInterval(id); }, [sessionReady, currentUser?.id]);
 
-  async function login(role, email, password) { if (role === 'guest') { const user = { id:'guest', name:'Guest Drop-off', role:'guest', label:'Guest Drop-off', email:'guest@vallepark.com' }; setCurrentUser(user); localStorage.setItem('valle-user', JSON.stringify(user)); return { ok:true, guest:true }; } const localEmail = (email || '').replace('@valle.com','@vallepark.com'); const loginEmails = [email, localEmail, email?.replace('@vallepark.com','@valle.com')].filter(Boolean); for (const candidate of loginEmails) { try { const res = await api.login(candidate, password); const token = res.access_token || res.accessToken || res.token; const apiUser = normalizeUser(res.user || { email:candidate, role:roleToApi[role], name:roleLabel[role] }); const user = { ...apiUser, role, label: roleLabel[role], email: localEmail || apiUser.email }; saveSession(token, user); setCurrentUser(user); setApiStatus('online'); return { ok:true }; } catch {} } const fallback = users.find(u => u.role === role && (u.email === localEmail || u.email === email) && (u.password === password || password)); if (!fallback) return { ok:false, message:'Invalid email or password for selected role.' }; setCurrentUser(fallback); localStorage.setItem('valle-user', JSON.stringify(fallback)); return { ok:true }; }
+  async function login(role, email, password) {
+    if (role === 'guest') {
+      const user = { id:'guest', name:'Guest Drop-off', role:'guest', label:'Guest Drop-off', email:'guest@vallepark.com' };
+      setCurrentUser(user);
+      localStorage.setItem('valle-user', JSON.stringify(user));
+      return { ok:true, guest:true };
+    }
+
+    const localEmail = (email || '').replace('@valle.com','@vallepark.com');
+    const loginEmails = [email, localEmail, email?.replace('@vallepark.com','@valle.com')]
+      .filter(Boolean);
+    let lastMessage = 'Invalid email or password for selected role.';
+
+    for (const candidate of loginEmails) {
+      try {
+        const res = await api.login(candidate, password);
+        const token = res.access_token || res.accessToken || res.token;
+        if (!token) throw new Error('Login response did not include an access token.');
+        const apiUser = normalizeUser(res.user || { email:candidate, role:roleToApi[role], name:roleLabel[role] });
+        const user = { ...apiUser, role, label: roleLabel[role], email: localEmail || apiUser.email };
+        saveSession(token, user);
+        setCurrentUser(user);
+        setApiStatus('online');
+        return { ok:true };
+      } catch (err) {
+        lastMessage = err?.message || lastMessage;
+      }
+    }
+
+    clearSession();
+    setCurrentUser(null);
+    setApiStatus('offline');
+    return { ok:false, message:lastMessage };
+  }
   function guestLogin(){ return login('guest','',''); }
   function logout(){ clearSession(); setCurrentUser(null); }
   function can(section){ return !!currentUser && roleAccess[currentUser.role]?.includes(section); }
@@ -340,9 +425,13 @@ export function AppProvider({ children }) {
   async function addUser(user){
     const normalized = { ...user, email: user.email?.includes('@') ? user.email : `${user.email}@vallepark.com` };
     const role = normalized.role === 'Admin' ? 'admin' : normalized.role === 'Store Keeper' ? 'store' : normalized.role || 'mechanic';
-    const localUser = { id:`USR-${users.length+1}`, name:normalized.name, email:normalized.email, role, label:roleLabel[role], password:normalized.password || 'password123', isActive: normalized.isActive ?? true };
+    if (!normalized.password || String(normalized.password).length < 10) {
+      notify('Create user failed: temporary password must be at least 10 characters.', 'error');
+      return null;
+    }
+    const localUser = { id:`USR-${users.length+1}`, name:normalized.name, email:normalized.email, role, label:roleLabel[role], isActive: normalized.isActive ?? true };
     setUsers(prev=>[localUser,...prev]);
-    await safe('create user', () => api.users.create({ name:localUser.name, email:localUser.email.replace('@vallepark.com','@valle.com'), password:localUser.password, role:roleToApi[role], isActive:localUser.isActive }), refreshAll);
+    await safe('create user', () => api.users.create({ name:localUser.name, email:localUser.email.replace('@vallepark.com','@valle.com'), password:normalized.password, role:roleToApi[role], isActive:localUser.isActive }), refreshAll);
     return localUser;
   }
 
@@ -356,7 +445,7 @@ export function AppProvider({ children }) {
   }
 
   async function resetUserPassword(id, password) {
-    await safe('reset password', () => api.users.resetPassword(id, password || 'password123'), refreshAll);
+    await safe('reset password', () => api.users.resetPassword(id, password), refreshAll);
   }
 
   async function removeUserLogin(id) {
@@ -564,6 +653,12 @@ export function AppProvider({ children }) {
     return saved;
   }
 
+  async function updateWheelStock(id, data){
+    const saved = await safe('update wheel stock', () => api.wheels.updateStock(id, data), null);
+    if(saved){ setWheelStock(prev=>prev.map(w=>w.id===id ? normalizeWheelStock(saved) : w)); }
+    return saved;
+  }
+
   async function addVehicleOutActivity(data){
     const vehicle=vehicles.find(v=>v.id===data.vehicleId || v.dbId===data.vehicleId);
     const saved = await safe('add vehicle out activity', () => api.vehicleOut.create({ vehicleId:vehicle?.dbId || data.vehicleId, activityType:data.activityType || data.bikingVehicleType, destination:data.destination || data.destinationRoute, destinationRoute:data.destinationRoute, bikingVehicleType:data.bikingVehicleType, driverName:data.driverName, invoiceNumber:data.invoiceNumber, guideName:data.guideName, quadActivity:data.quadActivity || data.bikingVehicleType, tripDuration:data.tripDuration, vehiclePlate: vehicle?.plate || data.vehicle, notes:data.notes }), null);
@@ -598,6 +693,6 @@ export function AppProvider({ children }) {
   const frequentAlerts = useMemo(() => { const counts={}; garageOps.forEach(g=>{ const key=normPlate(g.vehicle); if(key) counts[key]=(counts[key]||0)+1; }); return Object.entries(counts).filter(([,c])=>c>=3).map(([plate,c])=>`Attention: ${plate} has ${c} garage records and may need deeper inspection.`); }, [garageOps]);
   const searchIndex = useMemo(() => [ ...vehicles.map(item=>({ type:'Vehicle', label:`${item.plate} - ${item.model || item.type}`, path:`/vehicles/${encodeURIComponent(item.plate)}`, keywords:JSON.stringify(item) })), ...assessments.map(item=>({ type:'Assessment', label:`${item.id} - ${item.vehicle}`, path:'/assessments', keywords:JSON.stringify(item) })), ...inventory.map(item=>({ type:'Part', label:`${item.sku} - ${item.name}`, path:'/inventory', keywords:JSON.stringify(item) })), ...garageOps.map(item=>({ type:'Garage Work', label:`${item.id} - ${item.vehicle}`, path:'/garage', keywords:JSON.stringify(item) })) ], [vehicles, assessments, inventory, garageOps, transactions]);
 
-  const value = { apiStatus, appLoading: loadingCount > 0, appMessage, notify, clearAppMessage, reportAnalytics, supportRequests, createSupportRequest, updateSupportRequest, currentUser, users, mechanics, lastVehicleForAssessment, setLastVehicleForAssessment, addUser, updateUserAdmin, resetUserPassword, removeUserLogin, login, guestLogin, logout, can, refreshAll, vehicles, addVehicle, updateVehicle, createVehicleFromTransaction, inventory, setInventory, createInventoryItem, updateInventoryItem, addInventoryStock, fuelConsumptions, addFuelConsumption, fuelStockLogs, addFuelStockLog, wheelRequests, addWheelRequest, updateWheelRequest, vehicleOutActivities, addVehicleOutActivity, externalPartsIssues, assessments, addAssessment, updateAssessment, reopenAssessment, completeAssessment, issuePartsForAssessment, garageOps, addGarageOp, updateGarageOp, transactions, createTransaction, createPO, updateTransaction, notifications:[...frequentAlerts,...notifications], setNotifications, guestTickets, updateGuestTicket, createGuestTicket, takeGuestTicket, vehicleCatalog, findVehicleByPlate, getVehicleHistory, exportVehicleHistory, searchIndex, fileNames:(list)=>Array.from(list||[]).map(f=>f.name).join(', '), nowLocalInput, todayLocal };
+  const value = { apiStatus, appLoading: loadingCount > 0, appMessage, notify, clearAppMessage, reportAnalytics, supportRequests, createSupportRequest, updateSupportRequest, currentUser, users, mechanics, lastVehicleForAssessment, setLastVehicleForAssessment, addUser, updateUserAdmin, resetUserPassword, removeUserLogin, login, guestLogin, logout, can, refreshAll, vehicles, addVehicle, updateVehicle, createVehicleFromTransaction, inventory, setInventory, createInventoryItem, updateInventoryItem, addInventoryStock, fuelConsumptions, addFuelConsumption, fuelStockLogs, addFuelStockLog, wheelRequests, addWheelRequest, updateWheelRequest, wheelStock, updateWheelStock, vehicleOutActivities, addVehicleOutActivity, externalPartsIssues, assessments, addAssessment, updateAssessment, reopenAssessment, completeAssessment, issuePartsForAssessment, garageOps, addGarageOp, updateGarageOp, transactions, createTransaction, createPO, updateTransaction, notifications:[...frequentAlerts,...notifications], setNotifications, guestTickets, updateGuestTicket, createGuestTicket, takeGuestTicket, vehicleCatalog, findVehicleByPlate, getVehicleHistory, exportVehicleHistory, searchIndex, fileNames:(list)=>Array.from(list||[]).map(f=>f.name).join(', '), nowLocalInput, todayLocal };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

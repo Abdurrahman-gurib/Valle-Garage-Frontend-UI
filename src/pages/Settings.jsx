@@ -42,11 +42,11 @@ export default function Settings() {
     name: "",
     email: "",
     role: "mechanic",
-    password: "password123",
+    password: "",
     isActive: true,
   });
   const [editForm, setEditForm] = useState(null);
-  const [passwordForm, setPasswordForm] = useState({ id: "", password: "password123" });
+  const [passwordForm, setPasswordForm] = useState({ id: "", password: "" });
 
   const filteredUsers = useMemo(() => {
     const q = search.toLowerCase();
@@ -59,6 +59,9 @@ export default function Settings() {
 
   async function saveNewUser() {
     if (!form.name.trim()) return alert("Enter user name.");
+    if (!form.password || form.password.length < 10) {
+      return alert("Temporary password must be at least 10 characters.");
+    }
     const email = form.email.includes("@")
       ? form.email
       : `${form.email || form.name.toLowerCase().replaceAll(" ", ".")}@vallepark.com`;
@@ -68,7 +71,7 @@ export default function Settings() {
       name: "",
       email: "",
       role: "mechanic",
-      password: "password123",
+      password: "",
       isActive: true,
     });
     setModal(null);
@@ -97,13 +100,13 @@ export default function Settings() {
   }
 
   function openReset(user) {
-    setPasswordForm({ id: user.id, name: user.name, email: user.email, password: "password123" });
+    setPasswordForm({ id: user.id, name: user.name, email: user.email, password: "" });
     setModal("reset");
   }
 
   async function savePassword() {
-    if (!passwordForm.password || passwordForm.password.length < 6) {
-      return alert("Password must be at least 6 characters.");
+    if (!passwordForm.password || passwordForm.password.length < 10) {
+      return alert("Password must be at least 10 characters.");
     }
     await resetUserPassword(passwordForm.id, passwordForm.password);
     setModal(null);
@@ -231,7 +234,7 @@ export default function Settings() {
               <Input placeholder="name@vallepark.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </Field>
             <Field label="Temporary Password">
-              <Input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Minimum 10 characters" />
             </Field>
             <Field label="Role">
               <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
@@ -291,9 +294,10 @@ export default function Settings() {
 
           <Field label="New Password">
             <Input
+              type="password"
               value={passwordForm.password}
               onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
-              placeholder="Minimum 6 characters"
+              placeholder="Minimum 10 characters"
             />
           </Field>
 
